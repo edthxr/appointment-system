@@ -6,7 +6,7 @@ import { Service, CreateServiceInput, UpdateServiceInput } from './types';
 import { PaginatedResult } from '@/lib/types';
 
 export class DbServiceRepository implements IServiceRepository {
-  async findAll(clinicId: string, page = 1, limit = 10, search?: string): Promise<PaginatedResult<Service>> {
+  async findAll(clinicId: string, page = 1, limit = 10, search?: string, sortBy?: string, sortOrder: 'asc' | 'desc' = 'asc'): Promise<PaginatedResult<Service>> {
     if (!db) throw new Error('Database not connected');
     
     const offset = (page - 1) * limit;
@@ -46,6 +46,31 @@ export class DbServiceRepository implements IServiceRepository {
       where: whereClause,
       limit,
       offset,
+      orderBy: (services, { asc, desc }) => {
+        if (!sortBy) return [desc(services.createdAt)];
+        
+        let column;
+        switch (sortBy) {
+          case 'name':
+          case 'serviceDetails': // Frontend key mapping
+            column = services.name;
+            break;
+          case 'durationMin':
+          case 'duration':
+            column = services.durationMin;
+            break;
+          case 'price':
+            column = services.price;
+            break;
+          case 'isActive':
+          case 'status':
+            column = services.isActive;
+            break;
+          default:
+            column = services.createdAt;
+        }
+        return sortOrder === 'desc' ? [desc(column)] : [asc(column)];
+      },
     });
 
     return {

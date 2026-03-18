@@ -5,8 +5,8 @@ import { PaginatedResult } from '@/lib/types';
 export class ServiceService {
   constructor(private serviceRepo: IServiceRepository) {}
 
-  async getAllServices(clinicId: string, page?: number, limit?: number, search?: string): Promise<PaginatedResult<Service>> {
-    return this.serviceRepo.findAll(clinicId, page, limit, search);
+  async getAllServices(clinicId: string, page?: number, limit?: number, search?: string, sortBy?: string, sortOrder?: 'asc' | 'desc'): Promise<PaginatedResult<Service>> {
+    return this.serviceRepo.findAll(clinicId, page, limit, search, sortBy, sortOrder);
   }
 
   async getServiceById(id: string, clinicId: string): Promise<Service | null> {

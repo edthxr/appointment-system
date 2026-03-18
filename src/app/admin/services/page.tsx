@@ -1,16 +1,20 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { Service } from '@/modules/services/types';
 import Pagination from '@/components/Pagination';
+import DataTable, { Column } from '@/components/DataTable';
 
 export default function AdminServicesPage() {
-  const [services, setServices] = useState<any[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [total, setTotal] = useState(0);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [sortBy, setSortBy] = useState<string>('createdAt');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   const clinicSlug = 'aura-premium';
 
@@ -26,7 +30,7 @@ export default function AdminServicesPage() {
   const fetchServices = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/services?clinicSlug=${clinicSlug}&page=${page}&limit=${pageSize}&search=${debouncedSearch}`);
+      const res = await fetch(`/api/services?clinicSlug=${clinicSlug}&page=${page}&limit=${pageSize}&search=${debouncedSearch}&sortBy=${sortBy}&sortOrder=${sortOrder}`);
       const data = await res.json();
       if (data.success) {
         setServices(data.data);
@@ -37,7 +41,7 @@ export default function AdminServicesPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, clinicSlug, debouncedSearch]);
+  }, [page, pageSize, clinicSlug, debouncedSearch, sortBy, sortOrder]);
 
   useEffect(() => {
     fetchServices();
@@ -99,6 +103,78 @@ export default function AdminServicesPage() {
     }
   };
 
+  const handleSort = (key: string) => {
+    if (sortBy === key) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(key);
+      setSortOrder('asc');
+    }
+  };
+
+  const columns: Column<Service>[] = [
+    {
+      header: 'Service Details',
+      accessorKey: 'serviceDetails',
+      sortable: true,
+      cell: (s) => (
+        <div className="flex flex-col">
+          <div className="font-bold text-foreground text-[13px] group-hover:text-accent transition-colors uppercase tracking-tight">{s.name}</div>
+          <div className="text-[11px] text-foreground-muted truncate max-w-xs mt-0.5 font-medium">{s.description || 'No description provided'}</div>
+        </div>
+      )
+    },
+    {
+      header: 'Duration',
+      accessorKey: 'durationMin',
+      sortable: true,
+      cell: (s) => (
+        <div className="text-[11px] font-black text-foreground/70 bg-muted px-4 py-1.5 rounded-full inline-block border border-border-ios">{s.durationMin} MINS</div>
+      )
+    },
+    {
+      header: 'Price',
+      accessorKey: 'price',
+      sortable: true,
+      cell: (s) => (
+        <div className="text-[13px] font-black text-foreground tracking-tighter">฿{Number(s.price).toLocaleString()}</div>
+      )
+    },
+    {
+      header: 'Status',
+      accessorKey: 'isActive',
+      sortable: true,
+      cell: (s) => (
+        <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+          s.isActive ? 'bg-green-50 text-green-600 border-green-100' : 'bg-muted text-foreground-muted/50 border-border-ios'
+        }`}>
+          {s.isActive ? 'Active' : 'Archived'}
+        </span>
+      )
+    },
+    {
+      header: 'Actions',
+      accessorKey: 'actions',
+      className: 'text-right',
+      cell: (s) => (
+        <div className="flex justify-end gap-6">
+          <button 
+            onClick={() => handleOpenModal(s)}
+            className="text-[10px] font-black text-accent hover:text-accent/80 uppercase tracking-widest transition-all hover:scale-110"
+          >
+            Modify
+          </button>
+          <button 
+            onClick={() => handleDelete(s.id)}
+            className="text-[10px] font-black text-foreground-muted/40 hover:text-red-500 uppercase tracking-widest transition-all hover:scale-110"
+          >
+            Delete
+          </button>
+        </div>
+      )
+    }
+  ];
+
   return (
     <div className="animate-in fade-in duration-700">
       <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
@@ -147,63 +223,16 @@ export default function AdminServicesPage() {
         </div>
       </div>
 
-      <div className="card-luxury p-0 overflow-hidden border-border-ios/60">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-border-ios">
-            <thead className="bg-muted/30">
-              <tr>
-                <th className="px-8 py-5 text-left text-[10px] font-black text-foreground-muted uppercase tracking-[0.2em]">Service Details</th>
-                <th className="px-8 py-5 text-left text-[10px] font-black text-foreground-muted uppercase tracking-[0.2em]">Duration</th>
-                <th className="px-8 py-5 text-left text-[10px] font-black text-foreground-muted uppercase tracking-[0.2em]">Price</th>
-                <th className="px-8 py-5 text-left text-[10px] font-black text-foreground-muted uppercase tracking-[0.2em]">Status</th>
-                <th className="px-8 py-5 text-right text-[10px] font-black text-foreground-muted uppercase tracking-[0.2em]">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border-ios bg-white">
-              {loading ? (
-                <tr><td colSpan={5} className="px-8 py-20 text-center text-foreground-muted text-[12px] font-medium italic">Refreshing service list...</td></tr>
-              ) : services.length === 0 ? (
-                <tr><td colSpan={5} className="px-8 py-20 text-center text-foreground-muted text-[12px] font-medium italic">No clinical services defined</td></tr>
-              ) : services.map((s) => (
-                <tr key={s.id} className="hover:bg-surface transition-colors group">
-                  <td className="px-8 py-6 whitespace-nowrap">
-                    <div className="font-bold text-foreground text-[13px] group-hover:text-accent transition-colors uppercase tracking-tight">{s.name}</div>
-                    <div className="text-[11px] text-foreground-muted truncate max-w-xs mt-0.5 font-medium">{s.description || 'No description provided'}</div>
-                  </td>
-                  <td className="px-8 py-6 whitespace-nowrap">
-                    <div className="text-[11px] font-black text-foreground/70 bg-muted px-4 py-1.5 rounded-full inline-block border border-border-ios">{s.durationMin} MINS</div>
-                  </td>
-                  <td className="px-8 py-6 whitespace-nowrap">
-                    <div className="text-[13px] font-black text-foreground tracking-tighter">฿{Number(s.price).toLocaleString()}</div>
-                  </td>
-                  <td className="px-8 py-6 whitespace-nowrap">
-                    <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
-                      s.isActive ? 'bg-green-50 text-green-600 border-green-100' : 'bg-muted text-foreground-muted/50 border-border-ios'
-                    }`}>
-                      {s.isActive ? 'Active' : 'Archived'}
-                    </span>
-                  </td>
-                  <td className="px-8 py-6 whitespace-nowrap text-right text-sm">
-                    <div className="flex justify-end gap-6">
-                      <button 
-                        onClick={() => handleOpenModal(s)}
-                        className="text-[10px] font-black text-accent hover:text-accent/80 uppercase tracking-widest transition-all hover:scale-110"
-                      >
-                        Modify
-                      </button>
-                      <button 
-                        onClick={() => handleDelete(s.id)}
-                        className="text-[10px] font-black text-foreground-muted/40 hover:text-red-500 uppercase tracking-widest transition-all hover:scale-110"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      <DataTable 
+        columns={columns} 
+        data={services} 
+        loading={loading}
+        sortKey={sortBy}
+        sortOrder={sortOrder}
+        onSort={handleSort}
+      />
+
+      <div className="mt-10">
         <Pagination 
           page={page}
           pageSize={pageSize}

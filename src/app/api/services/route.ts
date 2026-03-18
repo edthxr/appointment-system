@@ -26,8 +26,10 @@ export async function GET(req: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
     const search = searchParams.get('search') || undefined;
+    const sortBy = searchParams.get('sortBy') || undefined;
+    const sortOrder = (searchParams.get('sortOrder') as 'asc' | 'desc') || undefined;
 
-    const result = await serviceService.getAllServices(clinicId, page, limit, search);
+    const result = await serviceService.getAllServices(clinicId, page, limit, search, sortBy, sortOrder);
     return apiResponse.success(result.data, undefined, 200, {
       total: result.total,
       page: result.page,

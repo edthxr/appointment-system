@@ -2,7 +2,7 @@ import { PaginatedResult } from '@/lib/types';
 import { Service, CreateServiceInput, UpdateServiceInput } from './types';
 
 export interface IServiceRepository {
-  findAll(clinicId: string, page?: number, limit?: number, search?: string): Promise<PaginatedResult<Service>>;
+  findAll(clinicId: string, page?: number, limit?: number, search?: string, sortBy?: string, sortOrder?: 'asc' | 'desc'): Promise<PaginatedResult<Service>>;
   findById(id: string, clinicId: string): Promise<Service | null>;
   create(data: CreateServiceInput): Promise<Service>;
   update(id: string, clinicId: string, data: UpdateServiceInput): Promise<Service>;
@@ -36,7 +36,7 @@ const MOCK_SERVICES: Service[] = [
 ];
 
 export class MockServiceRepository implements IServiceRepository {
-  async findAll(clinicId: string, page = 1, limit = 10, search?: string): Promise<PaginatedResult<Service>> {
+  async findAll(clinicId: string, page = 1, limit = 10, search?: string, sortBy?: string, sortOrder: 'asc' | 'desc' = 'asc'): Promise<PaginatedResult<Service>> {
     let all = MOCK_SERVICES.filter(s => s.clinicId === clinicId);
     
     if (search) {
@@ -45,6 +45,16 @@ export class MockServiceRepository implements IServiceRepository {
         s.name.toLowerCase().includes(q) || 
         (s.description?.toLowerCase().includes(q))
       );
+    }
+
+    if (sortBy) {
+      all.sort((a, b) => {
+        const valA = a[sortBy as keyof Service];
+        const valB = b[sortBy as keyof Service];
+        if (valA! < valB!) return sortOrder === 'asc' ? -1 : 1;
+        if (valA! > valB!) return sortOrder === 'asc' ? 1 : -1;
+        return 0;
+      });
     }
 
     const start = (page - 1) * limit;

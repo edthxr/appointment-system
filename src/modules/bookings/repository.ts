@@ -5,8 +5,8 @@ import { timeFromMinutes, getMinutesFromTime } from '@/lib/date';
 import { APPOINTMENT_STATUS } from '@/lib/constants';
 
 export interface IBookingRepository {
-  findAll(clinicId: string, page?: number, limit?: number, search?: string): Promise<PaginatedResult<Appointment>>;
-  findByUserId(userId: string, clinicId: string, page?: number, limit?: number, search?: string): Promise<PaginatedResult<Appointment>>;
+  findAll(clinicId: string, page?: number, limit?: number, search?: string, sortBy?: string, sortOrder?: 'asc' | 'desc'): Promise<PaginatedResult<Appointment>>;
+  findByUserId(userId: string, clinicId: string, page?: number, limit?: number, search?: string, sortBy?: string, sortOrder?: 'asc' | 'desc'): Promise<PaginatedResult<Appointment>>;
   findById(id: string, clinicId: string): Promise<Appointment | null>;
   create(data: CreateBookingInput, endTime: string): Promise<Appointment>;
   updateStatus(id: string, clinicId: string, status: Appointment['status']): Promise<Appointment>;
@@ -55,7 +55,7 @@ const MOCK_BLOCKED_SLOTS: BlockedSlot[] = [
 ];
 
 export class MockBookingRepository implements IBookingRepository {
-  async findAll(clinicId: string, page = 1, limit = 10, search?: string): Promise<PaginatedResult<Appointment>> {
+  async findAll(clinicId: string, page = 1, limit = 10, search?: string, sortBy?: string, sortOrder: 'asc' | 'desc' = 'asc'): Promise<PaginatedResult<Appointment>> {
     let all = MOCK_APPOINTMENTS.filter(a => a.clinicId === clinicId);
     
     if (search) {
@@ -70,6 +70,29 @@ export class MockBookingRepository implements IBookingRepository {
       });
     }
 
+    if (sortBy) {
+      all.sort((a, b) => {
+        let valA: any, valB: any;
+        if (sortBy === 'date' || sortBy === 'appointmentDate') {
+          valA = a.appointmentDate.getTime();
+          valB = b.appointmentDate.getTime();
+        } else if (sortBy === 'customer' || sortBy === 'userName') {
+          valA = a.user?.name || '';
+          valB = b.user?.name || '';
+        } else if (sortBy === 'service') {
+          valA = a.service?.name || '';
+          valB = b.service?.name || '';
+        } else {
+          valA = (a as any)[sortBy] || '';
+          valB = (b as any)[sortBy] || '';
+        }
+        
+        if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+        if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
     const start = (page - 1) * limit;
     const data = all.slice(start, start + limit);
     return {
@@ -80,7 +103,7 @@ export class MockBookingRepository implements IBookingRepository {
       totalPages: Math.ceil(all.length / limit),
     };
   }
-  async findByUserId(userId: string, clinicId: string, page = 1, limit = 10, search?: string): Promise<PaginatedResult<Appointment>> {
+  async findByUserId(userId: string, clinicId: string, page = 1, limit = 10, search?: string, sortBy?: string, sortOrder: 'asc' | 'desc' = 'asc'): Promise<PaginatedResult<Appointment>> {
     let all = MOCK_APPOINTMENTS.filter((a) => a.userId === userId && a.clinicId === clinicId);
     
     if (search) {
@@ -90,6 +113,26 @@ export class MockBookingRepository implements IBookingRepository {
           a.service?.name.toLowerCase().includes(q) ||
           a.status.toLowerCase().includes(q)
         );
+      });
+    }
+
+    if (sortBy) {
+      all.sort((a, b) => {
+        let valA: any, valB: any;
+        if (sortBy === 'date' || sortBy === 'appointmentDate') {
+          valA = a.appointmentDate.getTime();
+          valB = b.appointmentDate.getTime();
+        } else if (sortBy === 'service') {
+          valA = a.service?.name || '';
+          valB = b.service?.name || '';
+        } else {
+          valA = (a as any)[sortBy] || '';
+          valB = (b as any)[sortBy] || '';
+        }
+        
+        if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+        if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+        return 0;
       });
     }
 

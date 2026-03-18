@@ -25,9 +25,11 @@ export async function GET(req: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
     const search = searchParams.get('search') || undefined;
+    const sortBy = searchParams.get('sortBy') || undefined;
+    const sortOrder = (searchParams.get('sortOrder') as 'asc' | 'desc') || undefined;
 
     if (session.role === 'admin' || session.role === 'super_admin') {
-      const result = await bookingRepo.findAll(clinic.id, page, limit, search);
+      const result = await bookingRepo.findAll(clinic.id, page, limit, search, sortBy, sortOrder);
       return apiResponse.success(result.data, undefined, 200, {
         total: result.total,
         page: result.page,
@@ -35,7 +37,7 @@ export async function GET(req: NextRequest) {
         totalPages: result.totalPages,
       });
     } else {
-      const result = await bookingRepo.findByUserId(session.id, clinic.id, page, limit, search);
+      const result = await bookingRepo.findByUserId(session.id, clinic.id, page, limit, search, sortBy, sortOrder);
       return apiResponse.success(result.data, undefined, 200, {
         total: result.total,
         page: result.page,

@@ -8,7 +8,7 @@ import { APPOINTMENT_STATUS } from '@/lib/constants';
 import { PaginatedResult } from '@/lib/types';
 
 export class DbBookingRepository implements IBookingRepository {
-  async findAll(clinicId: string, page = 1, limit = 10, search?: string): Promise<PaginatedResult<Appointment>> {
+  async findAll(clinicId: string, page = 1, limit = 10, search?: string, sortBy?: string, sortOrder: 'asc' | 'desc' = 'asc'): Promise<PaginatedResult<Appointment>> {
     if (!db) throw new Error('Database not connected');
     
     const offset = (page - 1) * limit;
@@ -46,6 +46,23 @@ export class DbBookingRepository implements IBookingRepository {
       where: whereClause,
       limit,
       offset,
+      orderBy: (appointments, { asc, desc }) => {
+        if (!sortBy) return [desc(appointments.appointmentDate)];
+        
+        let column;
+        switch (sortBy) {
+          case 'appointmentDate':
+          case 'date':
+            column = appointments.appointmentDate;
+            break;
+          case 'status':
+            column = appointments.status;
+            break;
+          default:
+            column = appointments.appointmentDate;
+        }
+        return sortOrder === 'desc' ? [desc(column)] : [asc(column)];
+      },
       with: {
         user: true,
         service: true,
@@ -61,7 +78,7 @@ export class DbBookingRepository implements IBookingRepository {
     };
   }
 
-  async findByUserId(userId: string, clinicId: string, page = 1, limit = 10, search?: string): Promise<PaginatedResult<Appointment>> {
+  async findByUserId(userId: string, clinicId: string, page = 1, limit = 10, search?: string, sortBy?: string, sortOrder: 'asc' | 'desc' = 'asc'): Promise<PaginatedResult<Appointment>> {
     if (!db) throw new Error('Database not connected');
     
     const offset = (page - 1) * limit;
@@ -95,6 +112,23 @@ export class DbBookingRepository implements IBookingRepository {
       where: whereClause,
       limit,
       offset,
+      orderBy: (appointments, { asc, desc }) => {
+        if (!sortBy) return [desc(appointments.appointmentDate)];
+        
+        let column;
+        switch (sortBy) {
+          case 'appointmentDate':
+          case 'date':
+            column = appointments.appointmentDate;
+            break;
+          case 'status':
+            column = appointments.status;
+            break;
+          default:
+            column = appointments.appointmentDate;
+        }
+        return sortOrder === 'desc' ? [desc(column)] : [asc(column)];
+      },
       with: {
         service: true,
       }
