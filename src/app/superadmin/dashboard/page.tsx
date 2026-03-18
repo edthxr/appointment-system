@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 type ClinicStats = {
   id: string;
@@ -21,6 +22,15 @@ export default function SuperAdminDashboard() {
   const [formData, setFormData] = useState({ name: '', slug: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'banned'>('all');
+
+  const Sparkline = () => (
+    <svg className="w-full h-12 text-accent opacity-50" viewBox="0 0 100 20" preserveAspectRatio="none">
+      <path d="M0 15 Q 10 5, 20 12 T 40 8 T 60 14 T 80 6 T 100 10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
 
   useEffect(() => {
     fetchClinics();
@@ -39,6 +49,16 @@ export default function SuperAdminDashboard() {
       setLoading(false);
     }
   };
+
+  const filteredClinics = useMemo(() => {
+    return clinics.filter(c => {
+      const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                           c.slug.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesStatus = filterStatus === 'all' ? true : 
+                          filterStatus === 'active' ? c.isActive : !c.isActive;
+      return matchesSearch && matchesStatus;
+    });
+  }, [clinics, searchQuery, filterStatus]);
 
   const totals = useMemo(() => {
     return clinics.reduce((acc, curr) => ({
@@ -119,6 +139,9 @@ export default function SuperAdminDashboard() {
             <div className="text-5xl font-display font-black tracking-tighter text-foreground mb-4">
               ฿{(totals.revenue / 1000).toFixed(1)}K
             </div>
+            <div className="mb-4">
+              <Sparkline />
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest bg-green-500/10 text-green-600">Global</span>
@@ -155,6 +178,35 @@ export default function SuperAdminDashboard() {
         </div>
       </div>
 
+      <div className="flex flex-col md:flex-row gap-4 mb-8">
+        <div className="flex-1 relative">
+          <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          <input 
+            type="text" 
+            placeholder="Search by clinic name or slug..." 
+            className="w-full pl-12 pr-4 py-4 card-luxury border-none text-[13px] focus:ring-1 ring-accent/20"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        <div className="flex gap-2">
+          {(['all', 'active', 'banned'] as const).map((status) => (
+            <button
+              key={status}
+              onClick={() => setFilterStatus(status)}
+              className={cn(
+                "px-6 py-2 rounded-full text-[11px] font-black uppercase tracking-widest transition-all",
+                filterStatus === status 
+                  ? "bg-foreground text-white shadow-lg" 
+                  : "bg-white text-foreground-muted hover:bg-muted/50 border border-border-ios/20"
+              )}
+            >
+              {status}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="card-luxury overflow-hidden border-border-ios/50">
         <table className="w-full text-left">
           <thead>
@@ -169,10 +221,10 @@ export default function SuperAdminDashboard() {
           <tbody className="divide-y divide-border-ios/10">
             {loading ? (
               <tr><td colSpan={5} className="px-6 py-12 text-center text-foreground-muted text-[13px] font-bold uppercase tracking-widest animate-pulse">Loading Platform Data...</td></tr>
-            ) : clinics.length === 0 ? (
-              <tr><td colSpan={5} className="px-6 py-12 text-center text-foreground-muted text-[13px] font-bold uppercase tracking-widest italic opacity-50">No tenants provisioned</td></tr>
+            ) : filteredClinics.length === 0 ? (
+              <tr><td colSpan={5} className="px-6 py-12 text-center text-foreground-muted text-[13px] font-bold uppercase tracking-widest italic opacity-50">No results found matching your criteria</td></tr>
             ) : (
-              clinics.map((clinic) => (
+              filteredClinics.map((clinic) => (
                 <tr key={clinic.id} className={`hover:bg-accent/2 transition-colors group ${!clinic.isActive ? 'opacity-60 bg-muted/20' : ''}`}>
                   <td className="px-6 py-5">
                     <p className="text-[13px] font-bold text-foreground flex items-center gap-2">
@@ -251,6 +303,69 @@ export default function SuperAdminDashboard() {
           </div>
         </div>
       )}
+
+      {/* Recent Platform Activity */}
+      <div className="mt-20">
+        <h2 className="text-2xl font-display font-black text-foreground uppercase tracking-tighter mb-10">Recent Platform Activity</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 text-left">
+          <div className="lg:col-span-2 card-luxury overflow-hidden">
+            <div className="divide-y divide-border-ios/10">
+              {[
+                { event: 'New Clinic Joined', detail: 'Aura Premium Clinic', time: '2 hours ago', icon: '✨', color: 'text-accent' },
+                { event: 'Limit Reached', detail: 'Grace Dental (500 appts)', time: '5 hours ago', icon: '⚠️', color: 'text-amber-500' },
+                { event: 'Payment Success', detail: 'Subscription Renewal - Zen Spa', time: 'Yesterday', icon: '💳', color: 'text-green-500' },
+                { event: 'System Update', detail: 'v2.4.0 Deployed Successfully', time: '2 days ago', icon: '🚀', color: 'text-blue-500' },
+              ].map((item, i) => (
+                <div key={i} className="px-8 py-6 flex items-center justify-between hover:bg-muted/30 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <span className="text-2xl">{item.icon}</span>
+                    <div>
+                      <p className="text-[13px] font-black text-foreground uppercase tracking-widest">{item.event}</p>
+                      <p className="text-[11px] text-foreground-muted font-medium mt-0.5">{item.detail}</p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-black text-foreground-muted/40 uppercase tracking-widest">{item.time}</span>
+                </div>
+              ))}
+            </div>
+            <button className="w-full py-4 bg-muted/20 text-[10px] font-black text-foreground-muted uppercase tracking-widest hover:bg-muted/40 transition-colors">View All Audit Logs</button>
+          </div>
+
+          <div className="space-y-6">
+            <div className="card-luxury p-8 bg-foreground text-white border-none shadow-xl shadow-foreground/20">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mb-2">Platform Health</p>
+              <div className="flex items-center gap-2 mb-6">
+                <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                <span className="text-xs font-bold">ALL SYSTEMS OPERATIONAL</span>
+              </div>
+              <div className="space-y-4">
+                <div className="flex justify-between text-[11px] font-medium border-b border-white/10 pb-2">
+                   <span className="opacity-60">API Latency</span>
+                   <span>42ms</span>
+                </div>
+                <div className="flex justify-between text-[11px] font-medium border-b border-white/10 pb-2">
+                   <span className="opacity-60">Database Load</span>
+                   <span>12%</span>
+                </div>
+                <div className="flex justify-between text-[11px] font-medium">
+                   <span className="opacity-60">Pending Jobs</span>
+                   <span>0</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="card-luxury p-8">
+               <p className="text-[10px] font-black text-foreground-muted uppercase tracking-[0.2em] mb-4">Quick Links</p>
+               <div className="grid grid-cols-2 gap-3 text-left">
+                  <button className="p-4 rounded-2xl bg-muted/30 text-[10px] font-black uppercase tracking-widest text-foreground block hover:bg-muted transition-colors">Documentation</button>
+                  <button className="p-4 rounded-2xl bg-muted/30 text-[10px] font-black uppercase tracking-widest text-foreground block hover:bg-muted transition-colors">Support</button>
+                  <button className="p-4 rounded-2xl bg-muted/30 text-[10px] font-black uppercase tracking-widest text-foreground block hover:bg-muted transition-colors">Billing</button>
+                  <button className="p-4 rounded-2xl bg-muted/30 text-[10px] font-black uppercase tracking-widest text-foreground block hover:bg-muted transition-colors">Settings</button>
+               </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

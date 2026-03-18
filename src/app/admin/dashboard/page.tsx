@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { resolveActiveClinic } from '@/lib/clinic-resolver';
 import { registry } from '@/lib/registry';
+import { cn } from '@/lib/utils';
 
 export default async function AdminDashboard() {
   const activeClinic = await resolveActiveClinic();
@@ -10,6 +11,12 @@ export default async function AdminDashboard() {
   }
 
   const stats = await registry.bookingRepo.getStats(activeClinic.id);
+
+  const Sparkline = ({ color = 'text-accent' }: { color?: string }) => (
+    <svg className={cn("w-full h-8 opacity-40 mt-4", color)} viewBox="0 0 100 20" preserveAspectRatio="none">
+      <path d="M0 15 Q 15 5, 30 15 T 50 10 T 70 18 T 100 5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
 
   return (
     <div className="animate-in fade-in duration-1000">
@@ -29,6 +36,7 @@ export default async function AdminDashboard() {
             </div>
           </div>
           <p className="text-6xl font-display font-black text-foreground tracking-tighter">{stats.totalAppointments}</p>
+          <Sparkline />
           <p className="text-[11px] text-green-600 font-bold mt-4 flex items-center gap-1">
             <span className="bg-green-100 px-1.5 py-0.5 rounded-md">↑ 12%</span>
             <span className="opacity-60 uppercase tracking-widest text-[9px]">vs last month</span>
@@ -58,6 +66,7 @@ export default async function AdminDashboard() {
             </div>
           </div>
           <p className="text-6xl font-display font-black text-foreground tracking-tighter">฿{stats.estimatedRevenue >= 1000 ? `${(stats.estimatedRevenue / 1000).toFixed(1)}K` : stats.estimatedRevenue}</p>
+          <Sparkline />
           <p className="text-[11px] text-green-600 font-bold mt-4 flex items-center gap-1">
             <span className="bg-green-100 px-1.5 py-0.5 rounded-md">↑ 8.4%</span>
             <span className="opacity-60 uppercase tracking-widest text-[9px]">Calculated yield</span>

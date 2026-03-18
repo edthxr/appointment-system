@@ -37,32 +37,14 @@ export function Navbar({
   ];
 
   const adminLinks: NavLink[] = [
-    { href: '/admin/dashboard', label: 'Dashboard' },
-    { href: '/admin/appointments', label: 'รายการนัดหมาย' },
-    { href: '/admin/calendar', label: 'ปฏิทิน' },
-    { href: '/admin/notifications', label: 'การแจ้งเตือน' },
-    { href: '/admin/services', label: 'จัดการบริการ' },
-    { 
-      href: '/admin/settings', 
-      label: 'ตั้งค่า',
-      subLinks: [
-        { href: '/admin/settings', label: 'ข้อมูลคลินิก' },
-        { href: '/admin/settings/staff', label: 'จัดการบุคลากร' }
-      ]
-    },
-    { href: '/admin/profile', label: 'โปรไฟล์' },
+    { href: '/admin/dashboard', label: 'เข้าสู่แผงจัดการ (Admin Panel)' },
   ];
 
   const isAdminRole = role === 'admin' || role === 'super_admin' || role === 'clinic_owner' || role === 'clinic_admin' || role === 'clinic_staff';
   const isUserRole = role === 'user' || role === 'customer';
 
-  // Filter admin links for clinic staff - they can see appointments but not manage services or settings
-  let filteredAdminLinks = adminLinks;
-  if (role === 'clinic_staff') {
-    filteredAdminLinks = adminLinks.filter(link => 
-      !['จัดการบริการ', 'ตั้งค่า'].includes(link.label)
-    );
-  }
+  // For admins, show public links + admin panel jump link
+  let filteredAdminLinks = [...publicLinks, ...adminLinks];
 
   const links = isAdminRole ? filteredAdminLinks : isUserRole ? userLinks : publicLinks;
 
