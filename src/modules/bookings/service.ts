@@ -1,0 +1,96 @@
+import { IBookingRepository } from './repository';
+import { IServiceRepository } from '../services/repository';
+import { getMinutesFromTime, timeFromMinutes } from '@/lib/date';
+import { CreateBookingInput, Appointment } from './types';
+import { format } from 'date-fns';
+
+export class BookingService {
+  constructor(
+    private bookingRepo: IBookingRepository,
+    private serviceRepo: IServiceRepository
+  ) {}
+
+  async getAvailableSlots(date: Date, serviceId: string) {
+    const service = await this.serviceRepo.findById(serviceId);
+    if (!service) throw new Error('Service not found');
+
+    const dayOfWeek = date.getDay();
+    const businessHoursList = await this.bookingRepo.getBusinessHours();
+    const schedule = businessHoursList.find((bh) => bh.dayOfWeek === dayOfWeek);
+
+    if (!schedule || !schedule.isOpen) return [];
+
+    const startMinutes = getMinutesFromTime(schedule.startTime);
+    const endMinutes = getMinutesFromTime(schedule.endTime);
+    const appointments = await this.bookingRepo.getAppointmentsByDate(date);
+    const blockedSlots = await this.bookingRepo.getBlockedSlots(date);
+
+    const slots: string[] = [];
+    const step = 30; // 30-minute intervals for slot start times
+
+    for (let time = startMinutes; time + service.durationMin <= endMinutes; time += step) {
+      const slotStart = time;
+      const slotEnd = time + service.durationMin;
+
+      // Check if slot overlaps with appointments
+      const isOverlapAppointment = appointments.some((a) => {
+        const aStart = getMinutesFromTime(a.startTime);
+        const aEnd = getMinutesFromTime(a.endTime);
+        return slotStart < aEnd && slotEnd > aStart;
+      });
+
+      if (isOverlapAppointment) continue;
+
+      // Check if slot overlaps with blocked slots
+      const isOverlapBlocked = blockedSlots.some((b) => {
+        if (!b.startTime || !b.endTime) return true; // Whole day blocked
+        const bStart = getMinutesFromTime(b.startTime);
+        const bEnd = getMinutesFromTime(b.endTime);
+        return slotStart < bEnd && slotEnd > bStart;
+      });
+
+      if (isOverlapBlocked) continue;
+
+      slots.push(timeFromMinutes(slotStart));
+    }
+
+    return slots;
+  }
+
+  async createBooking(data: CreateBookingInput) {
+    const service = await this.serviceRepo.findById(data.serviceId);
+    if (!service) throw new Error('Service not found');
+
+    const startMin = getMinutesFromTime(data.startTime);
+    const endMin = startMin + service.durationMin;
+    const endTime = timeFromMinutes(endMin);
+
+    return this.bookingRepo.create(data, endTime);
+  }
+
+  async updateStatus(id: string, status: Appointment['status'], userId: string, isAdmin: boolean) {
+    const appointment = await this.bookingRepo.findById(id);
+    if (!appointment) throw new Error('ไม่พบข้อมูลการนัดหมาย');
+
+    // Admin can update any status
+    if (isAdmin) {
+      return this.bookingRepo.updateStatus(id, status);
+    }
+
+    // User can only cancel their own booking
+    if (appointment.userId !== userId) {
+      throw new Error('คุณไม่มีสิทธิ์จัดการนัดหมายนี้');
+    }
+
+    if (status !== 'cancelled') {
+      throw new Error('ไม่อนุญาตให้เปลี่ยนสถานะนี้');
+    }
+
+    // Cannot cancel if already cancelled or completed
+    if (['cancelled', 'completed'].includes(appointment.status)) {
+      throw new Error('ไม่สามารถยกเลิกนัดหมายที่ดำเนินการเสร็จสิ้นหรือถูกยกเลิกไปแล้วได้');
+    }
+
+    return this.bookingRepo.updateStatus(id, 'cancelled');
+  }
+}
