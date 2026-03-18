@@ -6,7 +6,7 @@ import { getSession } from '@/lib/session';
 
 import { getClinicBySlug } from '@/lib/tenant';
 
-const bookingService = new BookingService(registry.bookingRepo, registry.serviceRepo);
+const bookingService = registry.bookingService;
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);

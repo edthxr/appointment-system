@@ -16,6 +16,11 @@ export default function MyBookingsPage() {
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
 
+  // Custom Modal State
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [bookingToCancel, setBookingToCancel] = useState<any>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
+
   // Search debouncing
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -46,23 +51,33 @@ export default function MyBookingsPage() {
     fetchBookings();
   }, [fetchBookings]);
 
-  const handleCancel = async (id: string) => {
-    if (!confirm('คุณต้องการยกเลิกการนัดหมายนี้ใช่หรือไม่?')) return;
+  const openCancelModal = (booking: any) => {
+    setBookingToCancel(booking);
+    setCancelModalOpen(true);
+  };
+
+  const proceedCancel = async () => {
+    if (!bookingToCancel) return;
+    setIsCancelling(true);
 
     try {
-      const res = await fetch(`/api/bookings/${id}?clinicSlug=${clinicSlug}`, {
+      const res = await fetch(`/api/bookings/${bookingToCancel.id}?clinicSlug=${clinicSlug}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'cancelled' }),
       });
       const data = await res.json();
       if (data.success) {
-        setBookings(bookings.map((b) => (b.id === id ? { ...b, status: 'cancelled' } : b)));
+        setBookings(bookings.map((b) => (b.id === bookingToCancel.id ? { ...b, status: 'cancelled' } : b)));
+        setCancelModalOpen(false);
+        setBookingToCancel(null);
       } else {
         alert(data.error || 'ไม่สามารถยกเลิกนัดได้');
       }
     } catch (err) {
       alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+    } finally {
+      setIsCancelling(false);
     }
   };
 
@@ -166,8 +181,8 @@ export default function MyBookingsPage() {
                 
                 {(booking.status === 'pending' || booking.status === 'confirmed') ? (
                   <button 
-                    onClick={() => handleCancel(booking.id)}
-                    className="text-[10px] font-black text-foreground-muted/40 hover:text-red-500 transition-all uppercase tracking-widest hover:scale-110"
+                    onClick={() => openCancelModal(booking)}
+                    className="cursor-pointer px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-red-500/20 text-red-500/70 hover:border-red-500 hover:bg-red-50 hover:text-red-600 transition-all active:scale-95 whitespace-nowrap"
                   >
                     Void Appt
                   </button>
@@ -192,6 +207,39 @@ export default function MyBookingsPage() {
               setPage(1);
             }}
           />
+        </div>
+      )}
+
+      {/* Custom Cancel Modal */}
+      {cancelModalOpen && bookingToCancel && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white rounded-4xl p-10 max-w-sm w-full shadow-2xl border border-border-ios/50 text-center animate-in zoom-in-95 duration-300">
+            <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-display font-black text-foreground uppercase tracking-widest mb-3">Void Appointment</h3>
+            <p className="text-[13px] font-medium text-foreground-muted mb-8">
+              Are you sure you want to cancel the visit for <span className="font-bold text-foreground">{bookingToCancel.service?.name}</span>? This action cannot be undone.
+            </p>
+            <div className="flex flex-col gap-3">
+              <button 
+                onClick={proceedCancel}
+                disabled={isCancelling}
+                className="cursor-pointer w-full bg-red-500 text-white rounded-2xl py-4 text-[11px] font-black uppercase tracking-[0.2em] hover:bg-red-600 transition-colors disabled:opacity-50"
+              >
+                {isCancelling ? 'Voiding...' : 'Confirm Void'}
+              </button>
+              <button 
+                onClick={() => setCancelModalOpen(false)}
+                disabled={isCancelling}
+                className="cursor-pointer w-full bg-muted/50 text-foreground rounded-2xl py-4 text-[11px] font-black uppercase tracking-[0.2em] hover:bg-muted transition-colors disabled:opacity-50"
+              >
+                Keep Appointment
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
