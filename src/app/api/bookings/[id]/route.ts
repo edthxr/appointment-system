@@ -3,6 +3,7 @@ import { apiResponse } from '@/lib/api-response';
 import { BookingService } from '@/modules/bookings/service';
 import { registry } from '@/lib/registry';
 import { getSession } from '@/lib/session';
+import { ROLES } from '@/lib/constants';
 
 import { getClinicBySlug } from '@/lib/tenant';
 
@@ -38,7 +39,13 @@ export async function PATCH(
       clinic.id,
       status,
       session.id,
-      session.role === 'admin' || session.role === 'super_admin'
+      [
+        ROLES.SUPER_ADMIN, 
+        ROLES.CLINIC_OWNER, 
+        ROLES.CLINIC_ADMIN, 
+        ROLES.CLINIC_STAFF, 
+        ROLES.ADMIN
+      ].includes(session.role as any)
     );
 
     return apiResponse.success(updated, 'อัปเดตสถานะสำเร็จ');

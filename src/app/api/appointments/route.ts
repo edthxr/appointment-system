@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { apiResponse } from '@/lib/api-response';
 import { registry } from '@/lib/registry';
 import { checkAuth } from '@/lib/guards';
+import { ROLES } from '@/lib/constants';
 
 import { getClinicBySlug } from '@/lib/tenant';
 
@@ -28,7 +29,10 @@ export async function GET(req: NextRequest) {
     const sortBy = searchParams.get('sortBy') || undefined;
     const sortOrder = (searchParams.get('sortOrder') as 'asc' | 'desc') || undefined;
 
-    if (session.role === 'admin' || session.role === 'super_admin') {
+    const adminRoles = [ROLES.SUPER_ADMIN, ROLES.CLINIC_OWNER, ROLES.CLINIC_ADMIN, ROLES.CLINIC_STAFF, ROLES.ADMIN];
+    const isManageRole = adminRoles.includes(session.role as any);
+
+    if (isManageRole) {
       const result = await bookingRepo.findAll(clinic.id, page, limit, search, sortBy, sortOrder);
       return apiResponse.success(result.data, undefined, 200, {
         total: result.total,

@@ -1,12 +1,19 @@
 import { Navbar } from '@/components/Navbar';
 import { checkRole } from '@/lib/guards';
+import { ROLES } from '@/lib/constants';
 
 export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const session = await checkRole(['admin', 'super_admin', 'clinic_admin']);
+  const session = await checkRole([
+    ROLES.SUPER_ADMIN, 
+    ROLES.CLINIC_OWNER, 
+    ROLES.CLINIC_ADMIN, 
+    ROLES.CLINIC_STAFF, 
+    ROLES.ADMIN
+  ] as any);
 
   return (
     <div className="min-h-screen bg-background">

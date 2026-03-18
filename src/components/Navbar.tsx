@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils'; // I'll create this helper in src/lib/utils.ts
 
-import { Role } from '@/lib/constants';
+import { ROLES, Role } from '@/lib/constants';
 
 export function Navbar({ 
   user,
@@ -38,10 +38,18 @@ export function Navbar({
     { href: '/admin/settings', label: 'ตั้งค่า' },
   ];
 
-  const isAdminRole = role === 'admin' || role === 'super_admin' || role === 'clinic_admin';
+  const isAdminRole = role === 'admin' || role === 'super_admin' || role === 'clinic_admin' || role === 'clinic_staff';
   const isUserRole = role === 'user' || role === 'customer';
 
-  const links = isAdminRole ? adminLinks : isUserRole ? userLinks : publicLinks;
+  // Filter admin links for clinic staff - they can see appointments but not manage services or settings
+  let filteredAdminLinks = adminLinks;
+  if (role === 'clinic_staff') {
+    filteredAdminLinks = adminLinks.filter(link => 
+      !['จัดการบริการ', 'ตั้งค่า'].includes(link.label)
+    );
+  }
+
+  const links = isAdminRole ? filteredAdminLinks : isUserRole ? userLinks : publicLinks;
 
   return (
     <nav className="glass-ios border-b border-border-ios sticky top-0 z-50">
