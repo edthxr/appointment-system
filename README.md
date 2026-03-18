@@ -1,76 +1,136 @@
-# QueueFlow - SaaS Appointment System MVP
+## บัญชีสำหรับทดสอบ (Demo Credentials)
 
-ระบบจองคิวออนไลน์แบบ SaaS MVP พัฒนาด้วย Next.js (App Router), TypeScript และ Drizzle ORM
+| Role | Email | Password | Scope |
+| :--- | :--- | :--- | :--- |
+| **Admin** | `admin@example.com` | `admin123` | super_admin / clinic_admin |
+| **User** | `user@example.com` | `user123` | customer |
 
-## โครงสร้างระบบ (Architecture)
-ระบบใช้โครงสร้างแบบ Clean Architecture ที่เน้นความง่ายในการสลับระหว่าง Mock Data และ Database จริง:
-- `src/app`: Next.js App Router (UI Pages & API Routes)
-- `src/modules`: Business Logic แยกตาม Feature (Repository, Service, Type, Validation)
-- `src/db`: Database Schema, Client และ Configuration
-- `src/lib`: Core Utilities (Auth Guards, Session, Date Utils, API Wrappers)
+---
 
-## วิธีเริ่มต้นใช้งาน (Getting Started)
+## โครงสร้างฐานข้อมูล (Database Schema)
+ระบบใช้ PostgreSQL + Drizzle ORM โดยมีโครงสร้างแบบ **Shared Database + clinic_id** เพื่อแยกข้อมูลรายคลินิก (Multi-tenancy) อย่างสมบูรณ์ 
 
-1. ติดตั้ง dependencies:
-   ```bash
-   npm install
-   ```
+> [!NOTE]
+> รายละเอียดโครงสร้างตาราง (Data Dictionary) และความสัมพันธ์ของฐานข้อมูลทั้งหมด สามารถอ่านเพิ่มเติมได้ที่:
+> [**src/db/SCHEMA_DOCS.md**](file:///c:/appointment-system/appointment-system/src/db/SCHEMA_DOCS.md)
 
-2. รันโหมด Development:
-   ```bash
-   npm run dev
-   ```
-
-3. ข้อมูลสำหรับทดสอบ (Mock Login):
-   - **Admin:** `admin@example.com` / `password: admin123`
-   - **User:** `user@example.com` / `password: user123`
+---
 
 ## การจัดการฐานข้อมูล (Database Management)
+... (เหมือนเดิม) ...
 
-ระบบใช้ Drizzle ORM ในการจัดการ Schema และ Migration:
-
-### 1. การตั้งค่า Environment
-สร้างไฟล์ `.env` จาก `.env.example` และระบุ `DATABASE_URL`:
-```bash
-DATABASE_URL=postgres://user:password@localhost:5432/dbname
-USE_MOCK_DB=false
-```
-
-### 2. คำสั่ง Drizzle ORM
-- **Generate Migration**: สร้างไฟล์ migration จาก schema
-  ```bash
-  npm run db:generate
-  ```
-- **Push Schema**: อัปเดตโครงสร้างฐานข้อมูลโดยตรง (เหมาะสำหรับ Dev)
-  ```bash
-  npm run db:push
-  ```
-- **Migrate**: รัน migration ที่เตรียมไว้เข้าสู่ฐานข้อมูล
-  ```bash
-  npm run db:migrate
-  ```
-
-### 3. การเพิ่มข้อมูลเริ่มต้น (Seeding)
-รันคำสั่งเพื่อเพิ่มข้อมูลตัวอย่าง (Admin, Services, Business Hours):
-```bash
-npm run db:seed
-```
-
-## การสลับระหว่าง Mock และ Database จริง
-คุณสามารถควบคุมการทำงานของระบบผ่าน `USE_MOCK_DB` ใน `.env`:
-- `USE_MOCK_DB=true`: ใช้ข้อมูลจำลอง (In-memory) ไม่ต้องใช้ PostgreSQL
-- `USE_MOCK_DB=false`: เชื่อมต่อและใช้งาน PostgreSQL จริง (ต้องระบุ `DATABASE_URL`)
-
-## ฟีเจอร์ที่มี (MVP Features)
-- [x] **Authentication**: ระบบ Login แยก Role (Admin/User) โดยใช้ Mock Session
-- [x] **Service Management**: Admin สามารถดูรายการและจัดการบริการได้
-- [x] **Booking Flow**: User สามารถเลือกบริการ เลือกวันที่ และเวลาที่ว่าง (คำนวณจาก Business Hours และ Blocked Slots)
-- [x] **Admin Dashboard**: สรุปสถิติเบื้องต้นและรายการนัดหมาย
-- [x] **Available Slots Calculation**: Logic คำนวณช่วงเวลาว่างที่ซับซ้อน (รองรับ Service Duration)
-- [x] **Notification structure**: เตรียมโครงสร้างสำหรับแจ้งเตือน
+## ฟีเจอร์ที่มี (Features Status)
+- [x] **Multi-tenant Core**: รองรับหลายคลินิกใน Database เดียว แยก Data Isolation ด้วย `clinic_id`
+- [x] **Real Authentication**: ระบบ Login ตรวจสอบรหัสผ่านจริงด้วย Bcrypt
+- [x] **Dynamic Routing**: หน้าบ้านคลินิกแยกตาม Slug `/c/[clinicSlug]`
+- [x] **Tenant-aware Admin**: Dashboard และการจัดการข้อมูล แยกตามคลินิกที่ดูแล
+- [x] **Service Management**: จัดการบริการรายคลินิก
+- [x] **Booking Logic**: คำนวณช่วงเวลาว่าง (Available Slots) อัตโนมัติ
 
 ## TODO / Next Steps
-- [ ] เชื่อมต่อ Database PostgreSQL จริง (ผ่าน `.env`)
-- [ ] แทนที่ Mock Repository ด้วย Drizzle Implementation
-- [ ] เพิ่มระบบ Notification จริง (Line Notify / Email Service)
-- [ ] เพิ่มระบบลบ/แก้ไขข้อมูลในหน้า Admin อย่างสมบูรณ์
+- [ ] พัฒนาระบบ Dashboard ขั้นสูง (Charts & Analytics)
+- [ ] เชื่อมต่อ Line Notify / SMS สำหรับการแจ้งเตือนจริง
+- [ ] ระบบลบ/แก้ไขข้อมูลในหน้า Admin (เพิ่มความปลอดภัยระดับ Row-level Security)
+- [ ] หน้าเว็บสำหรับ Super Admin เพื่อสร้างคลินิกใหม่
+
+
+พจนานุกรมข้อมูล (Database Dictionary)
+อัปเดตล่าสุด: 18 มีนาคม 2026
+เอกสารนี้ระบุรายละเอียดของโครงสร้างฐานข้อมูล PostgreSQL ที่ใช้ในระบบจองนัดหมาย SaaS แบบหลายคลินิก (QueueFlow)
+________________________________________
+🌍 1. ตารางส่วนกลาง (Global Tables)
+ตารางที่ใช้เก็บข้อมูลภาพรวมของทั้งระบบ
+clinics (ข้อมูลคลินิก)
+เก็บตัวตนและการตั้งค่าของแต่ละธุรกิจ (Tenant)
+ชื่อคอลัมน์	ประเภทข้อมูล	คำอธิบาย
+id	UUID (PK)	ไอดีที่ไม่ซ้ำกันของคลินิก
+name	TEXT	ชื่อที่ใช้แสดงของคลินิก
+slug	TEXT	ชื่อที่ใช้ใน URL (เช่น aura-premium) ต้องไม่ซ้ำกัน
+logo_url	TEXT	ลิงก์รูปภาพโลโก้ของคลินิก
+theme_config	TEXT	การตั้งค่าธีม UI (สี, ฟอนต์) เก็บเป็น JSON String
+is_active	BOOLEAN	สถานะการเปิดใช้งานของคลินิกในระบบ
+created_at	TIMESTAMP	เวลาที่สร้างเรคคอร์ด
+updated_at	TIMESTAMP	เวลาที่อัปเดตข้อมูลล่าสุด
+users (ข้อมูลผู้ใช้)
+ศูนย์รวมบัญชีผู้ใช้ทุกคน (Admin, พนักงาน และ ลูกค้า)
+ชื่อคอลัมน์	ประเภทข้อมูล	คำอธิบาย
+id	UUID (PK)	ไอดีที่ไม่ซ้ำกันของผู้ใช้
+name	TEXT	ชื่อ-นามสกุล ของผู้ใช้
+email	TEXT	อีเมลสำหรับใช้เข้าสู่ระบบ (ต้องไม่ซ้ำกัน)
+phone	TEXT	เบอร์โทรศัพท์ติดต่อ
+password_hash	TEXT	รหัสผ่านที่เข้ารหัสด้วย Bcrypt
+role	ENUM	บทบาทระดับโลก: super_admin หรือ user
+created_at	TIMESTAMP	เวลาที่สร้างเรคคอร์ด
+updated_at	TIMESTAMP	เวลาที่อัปเดตข้อมูลล่าสุด
+________________________________________
+🔗 2. ตารางเชื่อมโยงและสิทธิ์ (Junction & RBAC)
+จัดการความสัมพันธ์และขอบเขตสิทธิ์ระหว่างผู้ใช้กับคลินิก
+clinic_users (ผู้ใช้รายคลินิก)
+บอกว่าผู้ใช้คนใดสังกัดคลินิกไหนและมีบทบาทอะไรในคลินิกนั้น
+ชื่อคอลัมน์	ประเภทข้อมูล	คำอธิบาย
+id	UUID (PK)	ไอดีเรคคอร์ด
+clinic_id	UUID (FK)	อ้างอิงไอดีคลินิก (clinics.id)
+user_id	UUID (FK)	อ้างอิงไอดีผู้ใช้ (users.id)
+role	ENUM	บทบาทในคลินิก: clinic_admin, staff, หรือ customer
+created_at	TIMESTAMP	เวลาที่สร้างเรคคอร์ด
+updated_at	TIMESTAMP	เวลาที่อัปเดตข้อมูลล่าสุด
+________________________________________
+🏥 3. ตารางข้อมูลเฉพาะคลินิก (Tenant-Specific Tables)
+ข้อมูลที่แยกขาดจากกันตามคลินิก ทุกตารางในส่วนนี้ ต้องมี clinic_id
+services (บริการ)
+รายการบริการทางการแพทย์หรือความงามของแต่ละคลินิก
+ชื่อคอลัมน์	ประเภทข้อมูล	คำอธิบาย
+id	UUID (PK)	ไอดีบริการ
+clinic_id	UUID (FK)	คลินิกเจ้าของบริการ (ใช้แยกข้อมูล)
+name	TEXT	ชื่อบริการ (เช่น "ฉีด Botox")
+description	TEXT	รายละเอียดหรือสรรพคุณของบริการ
+duration_min	INTEGER	เวลาที่ใช้ในการให้บริการ (หน่วยเป็นนาที)
+price	DECIMAL	ราคาค่าบริการ
+is_active	BOOLEAN	สถานะการเปิดให้บริการ (แสดง/ซ่อน)
+appointments (รายการนัดหมาย)
+ข้อมูลการจองคิวของลูกค้า
+ชื่อคอลัมน์	ประเภทข้อมูล	คำอธิบาย
+id	UUID (PK)	ไอดีการจอง
+clinic_id	UUID (FK)	คลินิกที่นัดหมายไว้
+user_id	UUID (FK)	ลูกค้าผู้ทำการจอง
+service_id	UUID (FK)	บริการที่เลือกจอง
+appointment_date	TIMESTAMP	วันที่นัดหมาย
+start_time	TEXT	เวลาเริ่มนัดหมาย (รูปแบบ HH:mm)
+end_time	TEXT	เวลาสิ้นสุดนัดหมาย (รูปแบบ HH:mm)
+status	ENUM	สถานะ: pending, confirmed, cancelled, completed
+note	TEXT	หมายเหตุเพิ่มเติมหรือคำขอพิเศษ
+business_hours (เวลาทำการ)
+กำหนดช่วงเวลาที่คลินิกเปิดรับจองในแต่ละวัน
+ชื่อคอลัมน์	ประเภทข้อมูล	คำอธิบาย
+id	UUID (PK)	ไอดีเรคคอร์ด
+clinic_id	UUID (FK)	คลินิกเจ้าของข้อมูล
+day_of_week	INTEGER	วันในสัปดาห์ 0 (อา.) ถึง 6 (ส.)
+start_time	TEXT	เวลาเปิดทำการ (HH:mm)
+end_time	TEXT	เวลาปิดทำการ (HH:mm)
+is_open	BOOLEAN	สถานะการเปิดรับจองในวันนั้นๆ
+blocked_slots (ช่วงเวลาปิดรับจอง)
+ช่วงเวลาที่ปิดรับจองชั่วคราว (เช่น วันหยุดนักขัตฤกษ์ หรือ ช่วงพักเที่ยง)
+ชื่อคอลัมน์	ประเภทข้อมูล	คำอธิบาย
+id	UUID (PK)	ไอดีเรคคอร์ด
+clinic_id	UUID (FK)	คลินิกเจ้าของข้อมูล
+blocked_date	TIMESTAMP	วันที่ปิดรับจอง
+start_time	TEXT	เวลาที่เริ่มปิด (เป็นค่าว่างหากปิดทั้งวัน)
+end_time	TEXT	เวลาที่สิ้นสุดการปิด
+reason	TEXT	เหตุผลที่ปิดรับจอง
+notifications (ประวัติแจ้งเตือน)
+บันทึกการส่งข้อความแจ้งเตือนหาลูกค้า
+ชื่อคอลัมน์	ประเภทข้อมูล	คำอธิบาย
+id	UUID (PK)	ไอดีการแจ้งเตือน
+clinic_id	UUID (FK)	คลินิกผู้ส่ง
+user_id	UUID (FK)	ผู้รับข้อความ
+appointment_id	UUID (FK)	การนัดหมายที่เกี่ยวข้อง (ถ้ามี)
+channel	ENUM	ช่องทาง: email หรือ line
+type	ENUM	ประเภท: booking_created, booking_confirmed ฯลฯ
+status	ENUM	สถานะการส่ง: pending, sent, failed
+sent_at	TIMESTAMP	เวลาที่ส่งข้อความสำเร็จ
+•	
+•	
+•	
+•	
+•	
+
