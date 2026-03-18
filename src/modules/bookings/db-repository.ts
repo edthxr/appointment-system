@@ -1,6 +1,6 @@
 import { db } from '@/db/client';
 import { appointments, services, users, businessHours, blockedSlots } from '@/db/schema';
-import { eq, and, sql, count, or, ilike, exists } from 'drizzle-orm';
+import { eq, and, sql, count, or, ilike, exists, desc } from 'drizzle-orm';
 import { IBookingRepository } from './repository';
 import { Appointment, CreateBookingInput, BusinessHours, BlockedSlot } from './types';
 import { format } from 'date-fns';
@@ -208,6 +208,14 @@ export class DbBookingRepository implements IBookingRepository {
     });
   }
 
+  async getAllBlockedSlots(clinicId: string): Promise<BlockedSlot[]> {
+    if (!db) throw new Error('Database not connected');
+    return await db.query.blockedSlots.findMany({
+      where: eq(blockedSlots.clinicId, clinicId),
+      orderBy: [desc(blockedSlots.blockedDate)],
+    });
+  }
+
   async createBusinessHours(clinicId: string, data: Omit<BusinessHours, 'id' | 'createdAt' | 'updatedAt'>): Promise<BusinessHours> {
     if (!db) throw new Error('Database not connected');
     const [result] = await db.insert(businessHours).values({
@@ -260,6 +268,41 @@ export class DbBookingRepository implements IBookingRepository {
     if (!db) throw new Error('Database not connected');
     await db.delete(blockedSlots)
       .where(and(eq(blockedSlots.id, id), eq(blockedSlots.clinicId, clinicId)));
+  }
+
+  async getStats(clinicId: string) {
+    if (!db) throw new Error('Database not connected');
+    
+    const allAppointments = await db.query.appointments.findMany({
+      where: eq(appointments.clinicId, clinicId),
+      with: { service: true }
+    });
+
+    const stats = {
+      totalAppointments: allAppointments.length,
+      pendingAppointments: allAppointments.filter(a => a.status === 'pending').length,
+      completedAppointments: allAppointments.filter(a => a.status === 'completed').length,
+      cancelledAppointments: allAppointments.filter(a => a.status === 'cancelled').length,
+      estimatedRevenue: allAppointments
+        .filter(a => a.status !== 'cancelled')
+        .reduce((sum, a) => sum + Number(a.service?.price || 0), 0),
+      popularServices: [] as { name: string; count: number }[]
+    };
+
+    // Simple service popularity calculation
+    const serviceCounts: Record<string, number> = {};
+    allAppointments.forEach(a => {
+      if (a.service?.name) {
+        serviceCounts[a.service.name] = (serviceCounts[a.service.name] || 0) + 1;
+      }
+    });
+    
+    stats.popularServices = Object.entries(serviceCounts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
+    return stats;
   }
 
   private mapToEntity(data: any): Appointment {

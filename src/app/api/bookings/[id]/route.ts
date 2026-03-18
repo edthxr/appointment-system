@@ -7,7 +7,7 @@ import { ROLES } from '@/lib/constants';
 
 import { getClinicBySlug } from '@/lib/tenant';
 
-const bookingService = new BookingService(registry.bookingRepo, registry.serviceRepo);
+const bookingService = registry.bookingService;
 
 export async function PATCH(
   req: NextRequest,

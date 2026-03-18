@@ -3,11 +3,15 @@ import { IServiceRepository } from '../services/repository';
 import { getMinutesFromTime, timeFromMinutes } from '@/lib/date';
 import { CreateBookingInput, Appointment } from './types';
 import { format } from 'date-fns';
+import { NotificationService } from '../notifications/service';
+import { IUserRepository } from '../auth/repository';
 
 export class BookingService {
   constructor(
     private bookingRepo: IBookingRepository,
-    private serviceRepo: IServiceRepository
+    private serviceRepo: IServiceRepository,
+    private notificationService: NotificationService,
+    private userRepo: IUserRepository
   ) {}
 
   async getAvailableSlots(date: Date, serviceId: string, clinicId: string) {
@@ -65,7 +69,23 @@ export class BookingService {
     const endMin = startMin + service.durationMin;
     const endTime = timeFromMinutes(endMin);
 
-    return this.bookingRepo.create(data, endTime);
+    const booking = await this.bookingRepo.create(data, endTime);
+    
+    // Trigger notification
+    const user = await this.userRepo.findById(data.userId);
+    if (user) {
+      await this.notificationService.send({
+        clinicId: data.clinicId,
+        userId: data.userId,
+        appointmentId: booking.id,
+        channel: 'email',
+        type: 'booking_created',
+        to: user.email,
+        message: `คุณได้ทำการจอง ${service.name} ในวันที่ ${format(data.appointmentDate, 'dd/MM/yyyy')} เวลา ${data.startTime}. กรุณารอเจ้าหน้าที่ยืนยัน.`
+      });
+    }
+
+    return booking;
   }
 
   async updateStatus(id: string, clinicId: string, status: Appointment['status'], userId: string, isAdmin: boolean) {
@@ -73,24 +93,48 @@ export class BookingService {
     if (!appointment) throw new Error('ไม่พบข้อมูลการนัดหมาย');
 
     // Admin can update any status
-    if (isAdmin) {
-      return this.bookingRepo.updateStatus(id, clinicId, status);
+    if (!isAdmin) {
+      // User can only cancel their own booking
+      if (appointment.userId !== userId) {
+        throw new Error('คุณไม่มีสิทธิ์จัดการนัดหมายนี้');
+      }
+
+      if (status !== 'cancelled') {
+        throw new Error('ไม่อนุญาตให้เปลี่ยนสถานะนี้');
+      }
+
+      // Cannot cancel if already cancelled or completed
+      if (['cancelled', 'completed'].includes(appointment.status)) {
+        throw new Error('ไม่สามารถยกเลิกนัดหมายที่ดำเนินการเสร็จสิ้นหรือถูกยกเลิกไปแล้วได้');
+      }
     }
 
-    // User can only cancel their own booking
-    if (appointment.userId !== userId) {
-      throw new Error('คุณไม่มีสิทธิ์จัดการนัดหมายนี้');
+    const result = await this.bookingRepo.updateStatus(id, clinicId, status);
+    
+    // Trigger notification on status change
+    const user = await this.userRepo.findById(appointment.userId);
+    const service = await this.serviceRepo.findById(appointment.serviceId, clinicId);
+    
+    if (user && service) {
+      let type: any = 'booking_confirmed';
+      let message = `การจอง ${service.name} ของคุณได้รับการยืนยันแล้ว`;
+      
+      if (status === 'cancelled') {
+        type = 'booking_cancelled';
+        message = `การจอง ${service.name} ของคุณถูกยกเลิกแล้ว`;
+      }
+
+      await this.notificationService.send({
+        clinicId,
+        userId: user.id,
+        appointmentId: id,
+        channel: 'email',
+        type,
+        to: user.email,
+        message
+      });
     }
 
-    if (status !== 'cancelled') {
-      throw new Error('ไม่อนุญาตให้เปลี่ยนสถานะนี้');
-    }
-
-    // Cannot cancel if already cancelled or completed
-    if (['cancelled', 'completed'].includes(appointment.status)) {
-      throw new Error('ไม่สามารถยกเลิกนัดหมายที่ดำเนินการเสร็จสิ้นหรือถูกยกเลิกไปแล้วได้');
-    }
-
-    return this.bookingRepo.updateStatus(id, clinicId, 'cancelled');
+    return result;
   }
 }

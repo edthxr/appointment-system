@@ -32,10 +32,12 @@ export function Navbar({
 
   const adminLinks = [
     { href: '/admin/dashboard', label: 'Dashboard' },
-    { href: '/admin/services', label: 'จัดการบริการ' },
     { href: '/admin/appointments', label: 'รายการนัดหมาย' },
     { href: '/admin/calendar', label: 'ปฏิทิน' },
+    { href: '/admin/notifications', label: 'การแจ้งเตือน' },
+    { href: '/admin/services', label: 'จัดการบริการ' },
     { href: '/admin/settings', label: 'ตั้งค่า' },
+    { href: '/admin/profile', label: 'โปรไฟล์' },
   ];
 
   const isAdminRole = role === 'admin' || role === 'super_admin' || role === 'clinic_admin' || role === 'clinic_staff';

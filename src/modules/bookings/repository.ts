@@ -16,9 +16,18 @@ export interface IBookingRepository {
   updateBusinessHours(id: string, clinicId: string, data: Partial<BusinessHours>): Promise<BusinessHours>;
   deleteBusinessHours(id: string, clinicId: string): Promise<void>;
   getBlockedSlots(date: Date, clinicId: string): Promise<BlockedSlot[]>;
+  getAllBlockedSlots(clinicId: string): Promise<BlockedSlot[]>;
   createBlockedSlot(clinicId: string, data: Omit<BlockedSlot, 'id' | 'createdAt' | 'updatedAt'>): Promise<BlockedSlot>;
   updateBlockedSlot(id: string, clinicId: string, data: Partial<BlockedSlot>): Promise<BlockedSlot>;
   deleteBlockedSlot(id: string, clinicId: string): Promise<void>;
+  getStats(clinicId: string): Promise<{
+    totalAppointments: number;
+    pendingAppointments: number;
+    completedAppointments: number;
+    cancelledAppointments: number;
+    estimatedRevenue: number;
+    popularServices: { name: string; count: number }[];
+  }>;
 }
 
 // Mock Data
@@ -35,7 +44,7 @@ const MOCK_APPOINTMENTS: Appointment[] = [
     createdAt: new Date(),
     updatedAt: new Date(),
     user: { name: 'สมชาย ใจดี', email: 'user1@example.com' },
-    service: { name: 'ตัดผมชาย', durationMin: 30 },
+    service: { name: 'ตัดผมชาย', durationMin: 30, price: 350 },
   }
 ];
 
@@ -188,6 +197,11 @@ export class MockBookingRepository implements IBookingRepository {
     return MOCK_BLOCKED_SLOTS.filter((b) => format(b.blockedDate, 'yyyy-MM-dd') === dStr && b.clinicId === clinicId);
   }
 
+  async getAllBlockedSlots(clinicId: string): Promise<BlockedSlot[]> {
+    return MOCK_BLOCKED_SLOTS.filter(b => b.clinicId === clinicId)
+      .sort((a, b) => b.blockedDate.getTime() - a.blockedDate.getTime());
+  }
+
   async createBusinessHours(clinicId: string, data: Omit<BusinessHours, 'id' | 'createdAt' | 'updatedAt'>): Promise<BusinessHours> {
     const newBusinessHours: BusinessHours = {
       ...data,
@@ -234,7 +248,18 @@ export class MockBookingRepository implements IBookingRepository {
 
   async deleteBlockedSlot(id: string, clinicId: string): Promise<void> {
     const index = MOCK_BLOCKED_SLOTS.findIndex((bs) => bs.id === id && bs.clinicId === clinicId);
-    if (index === -1) throw new Error('Blocked slot not found');
-    MOCK_BLOCKED_SLOTS.splice(index, 1);
+    index === -1 ? null : MOCK_BLOCKED_SLOTS.splice(index, 1);
+  }
+
+  async getStats(clinicId: string) {
+    const all = MOCK_APPOINTMENTS.filter(a => a.clinicId === clinicId);
+    return {
+      totalAppointments: all.length,
+      pendingAppointments: all.filter(a => a.status === APPOINTMENT_STATUS.PENDING).length,
+      completedAppointments: all.filter(a => a.status === APPOINTMENT_STATUS.CONFIRMED).length, // Status names differ in mock
+      cancelledAppointments: all.filter(a => a.status === APPOINTMENT_STATUS.CANCELLED).length,
+      estimatedRevenue: all.reduce((sum, a) => sum + (a.service?.price || 0), 0),
+      popularServices: []
+    };
   }
 }

@@ -6,6 +6,8 @@ export interface IUserRepository {
   findWithPasswordByEmail(email: string): Promise<(User & { passwordHash: string }) | null>;
   findById(id: string): Promise<User | null>;
   create(data: RegisterInput & { passwordHash: string }): Promise<User>;
+  update(id: string, data: Partial<User>): Promise<User>;
+  updatePassword(id: string, passwordHash: string): Promise<void>;
 }
 
 const MOCK_USERS: User[] = [
@@ -51,5 +53,18 @@ export class MockUserRepository implements IUserRepository {
     };
     MOCK_USERS.push(newUser);
     return newUser;
+  }
+
+  async update(id: string, data: Partial<User>): Promise<User> {
+    const index = MOCK_USERS.findIndex((u) => u.id === id);
+    if (index === -1) throw new Error('User not found');
+    MOCK_USERS[index] = { ...MOCK_USERS[index], ...data };
+    return MOCK_USERS[index];
+  }
+
+  async updatePassword(id: string, passwordHash: string): Promise<void> {
+    const index = MOCK_USERS.findIndex((u) => u.id === id);
+    if (index === -1) throw new Error('User not found');
+    // In mock, we don't store password hashes permanently, just simulate success
   }
 }

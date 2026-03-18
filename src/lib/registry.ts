@@ -9,6 +9,11 @@ import { MockSettingRepository, ISettingRepository } from '../modules/settings/r
 import { DbSettingRepository } from '../modules/settings/db-repository';
 import { MockNotificationRepository, INotificationRepository } from '../modules/notifications/repository';
 import { DbNotificationRepository } from '../modules/notifications/db-repository';
+import { IClinicRepository } from '../modules/clinics/repository';
+import { DbClinicRepository } from '../modules/clinics/db-repository';
+import { NotificationService } from '../modules/notifications/service';
+import { MockEmailProvider } from '../modules/notifications/email-provider';
+import { BookingService } from '../modules/bookings/service';
 
 class RepositoryRegistry {
   private static instance: RepositoryRegistry;
@@ -18,6 +23,9 @@ class RepositoryRegistry {
   private _userRepo: IUserRepository | null = null;
   private _settingRepo: ISettingRepository | null = null;
   private _notificationRepo: INotificationRepository | null = null;
+  private _clinicRepo: IClinicRepository | null = null;
+  private _notificationService: NotificationService | null = null;
+  private _bookingService: BookingService | null = null;
 
   private constructor() {}
 
@@ -70,6 +78,34 @@ class RepositoryRegistry {
         : new DbNotificationRepository();
     }
     return this._notificationRepo!;
+  }
+
+  get clinicRepo(): IClinicRepository {
+    if (!this._clinicRepo) {
+      this._clinicRepo = new DbClinicRepository();
+    }
+    return this._clinicRepo!;
+  }
+
+  get notificationService(): NotificationService {
+    if (!this._notificationService) {
+      this._notificationService = new NotificationService(this.notificationRepo);
+      // Register default mock providers
+      this._notificationService.registerProvider(new MockEmailProvider());
+    }
+    return this._notificationService!;
+  }
+
+  get bookingService(): BookingService {
+    if (!this._bookingService) {
+      this._bookingService = new BookingService(
+        this.bookingRepo,
+        this.serviceRepo,
+        this.notificationService,
+        this.userRepo
+      );
+    }
+    return this._bookingService!;
   }
 }
 

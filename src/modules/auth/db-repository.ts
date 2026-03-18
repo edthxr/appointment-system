@@ -34,4 +34,21 @@ export class DbUserRepository implements IUserRepository {
     
     return { ...result[0], role: result[0].role as any };
   }
+
+  async update(id: string, data: Partial<User>): Promise<User> {
+    const result = await db!.update(users).set({
+      name: data.name,
+      phone: data.phone,
+      updatedAt: new Date(),
+    }).where(eq(users.id, id)).returning();
+    
+    return { ...result[0], role: result[0].role as any };
+  }
+
+  async updatePassword(id: string, passwordHash: string): Promise<void> {
+    await db!.update(users).set({
+      passwordHash,
+      updatedAt: new Date(),
+    }).where(eq(users.id, id));
+  }
 }

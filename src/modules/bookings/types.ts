@@ -15,7 +15,7 @@ export interface Appointment {
   
   // Relations (optional in core type, can be expanded)
   user?: { name: string; email: string };
-  service?: { name: string; durationMin: number };
+  service?: { name: string; durationMin: number; price?: number };
 }
 
 export interface CreateBookingInput {

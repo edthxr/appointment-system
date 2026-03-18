@@ -9,9 +9,10 @@ const bookingRepo = registry.bookingRepo;
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getSession();
     const canManage = session && [
       ROLES.SUPER_ADMIN, 
@@ -53,7 +54,7 @@ export async function PATCH(
       return apiResponse.error('endTime must be in HH:mm format', 400);
     }
 
-    const businessHours = await bookingRepo.updateBusinessHours(params.id, clinicId, body);
+    const businessHours = await bookingRepo.updateBusinessHours(id, clinicId, body);
     return apiResponse.success(businessHours, 'อัปเดตเวลาทำการสำเร็จ');
   } catch (error: any) {
     return apiResponse.error(error.message || 'ไม่สามารถอัปเดตเวลาทำการได้', 400);
@@ -62,9 +63,10 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getSession();
     const canManage = session && [
       ROLES.SUPER_ADMIN, 
@@ -90,7 +92,7 @@ export async function DELETE(
       return apiResponse.error('clinicId or clinicSlug is required');
     }
 
-    await bookingRepo.deleteBusinessHours(params.id, clinicId);
+    await bookingRepo.deleteBusinessHours(id, clinicId);
     return apiResponse.success(null, 'ลบเวลาทำการสำเร็จ');
   } catch (error: any) {
     return apiResponse.error(error.message || 'ไม่สามารถลบเวลาทำการได้', 400);
