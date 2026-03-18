@@ -20,13 +20,15 @@ export default function LoginPage() {
       const res = await fetch('/api/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: email.trim(), password }),
       });
       const data = await res.json();
       
       if (data.success) {
         const user = data.data;
-        if (['admin', 'super_admin', 'clinic_owner', 'clinic_admin', 'clinic_staff'].includes(user.role)) {
+        if (user.role === 'super_admin') {
+          router.push('/superadmin/dashboard');
+        } else if (['admin', 'clinic_owner', 'clinic_admin', 'clinic_staff'].includes(user.role)) {
           router.push('/admin/dashboard');
         } else {
           router.push('/c/aura-premium'); 
