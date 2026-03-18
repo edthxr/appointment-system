@@ -1,6 +1,7 @@
 import { pool, db } from './client';
-import { users, clinics, clinicUsers, services, businessHours, appointments, notifications } from './schema';
+import { users, clinics, clinicUsers, services, businessHours, blockedSlots, appointments, notifications } from './schema';
 import { ROLES } from '@/lib/constants';
+import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 
 async function seed() {
@@ -109,11 +110,60 @@ async function seed() {
   // 5. Seed Business Hours
   const bh = [];
   for (let i = 1; i <= 5; i++) {
-    bh.push({ clinicId: defaultClinic.id, dayOfWeek: i, startTime: '09:00', endTime: '18:00', isOpen: true });
+    bh.push({ 
+      clinicId: defaultClinic.id, 
+      dayOfWeek: i, 
+      startTime: '09:00', 
+      endTime: '18:00', 
+      isOpen: true 
+    });
   }
-  bh.push({ clinicId: defaultClinic.id, dayOfWeek: 6, startTime: '10:00', endTime: '16:00', isOpen: true });
-  bh.push({ clinicId: defaultClinic.id, dayOfWeek: 0, startTime: '00:00', endTime: '00:00', isOpen: false });
+  bh.push({ 
+    clinicId: defaultClinic.id, 
+    dayOfWeek: 6, 
+    startTime: '10:00', 
+    endTime: '16:00', 
+    isOpen: true 
+  });
+  bh.push({ 
+    clinicId: defaultClinic.id, 
+    dayOfWeek: 0, 
+    startTime: '00:00', 
+    endTime: '00:00', 
+    isOpen: false 
+  });
   await db.insert(businessHours).values(bh);
+
+  // 6. Seed Blocked Slots
+  await db.insert(blockedSlots).values([
+    {
+      clinicId: defaultClinic.id,
+      blockedDate: new Date(),
+      startTime: '12:00',
+      endTime: '13:00',
+      reason: 'พักเที่ยง',
+    },
+    {
+      clinicId: defaultClinic.id,
+      blockedDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Next week
+      startTime: null,
+      endTime: null,
+      reason: 'วันหยุดพิเศษ',
+    }
+  ]);
+
+  // 7. Seed Sample Appointments
+  await db.insert(appointments).values([
+    {
+      clinicId: defaultClinic.id,
+      userId: customerUser.id,
+      serviceId: (await db.select().from(services).where(eq(services.clinicId, defaultClinic.id)).limit(1))[0].id,
+      appointmentDate: new Date(),
+      startTime: '10:00',
+      endTime: '10:30',
+      status: 'confirmed',
+    }
+  ]);
 
   console.log('Seed completed successfully!');
   await pool.end();

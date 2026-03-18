@@ -12,7 +12,13 @@ export interface IBookingRepository {
   updateStatus(id: string, clinicId: string, status: Appointment['status']): Promise<Appointment>;
   getAppointmentsByDate(date: Date, clinicId: string): Promise<Appointment[]>;
   getBusinessHours(clinicId: string): Promise<BusinessHours[]>;
+  createBusinessHours(clinicId: string, data: Omit<BusinessHours, 'id' | 'createdAt' | 'updatedAt'>): Promise<BusinessHours>;
+  updateBusinessHours(id: string, clinicId: string, data: Partial<BusinessHours>): Promise<BusinessHours>;
+  deleteBusinessHours(id: string, clinicId: string): Promise<void>;
   getBlockedSlots(date: Date, clinicId: string): Promise<BlockedSlot[]>;
+  createBlockedSlot(clinicId: string, data: Omit<BlockedSlot, 'id' | 'createdAt' | 'updatedAt'>): Promise<BlockedSlot>;
+  updateBlockedSlot(id: string, clinicId: string, data: Partial<BlockedSlot>): Promise<BlockedSlot>;
+  deleteBlockedSlot(id: string, clinicId: string): Promise<void>;
 }
 
 // Mock Data
@@ -34,13 +40,13 @@ const MOCK_APPOINTMENTS: Appointment[] = [
 ];
 
 const MOCK_BUSINESS_HOURS: BusinessHours[] = [
-  { id: 'bh1', clinicId: 'default-clinic-id', dayOfWeek: 1, startTime: '09:00', endTime: '18:00', isOpen: true },
-  { id: 'bh2', clinicId: 'default-clinic-id', dayOfWeek: 2, startTime: '09:00', endTime: '18:00', isOpen: true },
-  { id: 'bh3', clinicId: 'default-clinic-id', dayOfWeek: 3, startTime: '09:00', endTime: '18:00', isOpen: true },
-  { id: 'bh4', clinicId: 'default-clinic-id', dayOfWeek: 4, startTime: '09:00', endTime: '18:00', isOpen: true },
-  { id: 'bh5', clinicId: 'default-clinic-id', dayOfWeek: 5, startTime: '09:00', endTime: '18:00', isOpen: true },
-  { id: 'bh6', clinicId: 'default-clinic-id', dayOfWeek: 6, startTime: '10:00', endTime: '16:00', isOpen: true },
-  { id: 'bh7', clinicId: 'default-clinic-id', dayOfWeek: 0, startTime: '00:00', endTime: '00:00', isOpen: false },
+  { id: 'bh1', clinicId: 'default-clinic-id', dayOfWeek: 1, startTime: '09:00', endTime: '18:00', isOpen: true, createdAt: new Date(), updatedAt: new Date() },
+  { id: 'bh2', clinicId: 'default-clinic-id', dayOfWeek: 2, startTime: '09:00', endTime: '18:00', isOpen: true, createdAt: new Date(), updatedAt: new Date() },
+  { id: 'bh3', clinicId: 'default-clinic-id', dayOfWeek: 3, startTime: '09:00', endTime: '18:00', isOpen: true, createdAt: new Date(), updatedAt: new Date() },
+  { id: 'bh4', clinicId: 'default-clinic-id', dayOfWeek: 4, startTime: '09:00', endTime: '18:00', isOpen: true, createdAt: new Date(), updatedAt: new Date() },
+  { id: 'bh5', clinicId: 'default-clinic-id', dayOfWeek: 5, startTime: '09:00', endTime: '18:00', isOpen: true, createdAt: new Date(), updatedAt: new Date() },
+  { id: 'bh6', clinicId: 'default-clinic-id', dayOfWeek: 6, startTime: '10:00', endTime: '16:00', isOpen: true, createdAt: new Date(), updatedAt: new Date() },
+  { id: 'bh7', clinicId: 'default-clinic-id', dayOfWeek: 0, startTime: '00:00', endTime: '00:00', isOpen: false, createdAt: new Date(), updatedAt: new Date() },
 ];
 
 const MOCK_BLOCKED_SLOTS: BlockedSlot[] = [
@@ -51,6 +57,8 @@ const MOCK_BLOCKED_SLOTS: BlockedSlot[] = [
     startTime: '12:00',
     endTime: '13:00',
     reason: 'พักเที่ยง',
+    createdAt: new Date(),
+    updatedAt: new Date(),
   }
 ];
 
@@ -178,5 +186,55 @@ export class MockBookingRepository implements IBookingRepository {
   async getBlockedSlots(date: Date, clinicId: string): Promise<BlockedSlot[]> {
     const dStr = format(date, 'yyyy-MM-dd');
     return MOCK_BLOCKED_SLOTS.filter((b) => format(b.blockedDate, 'yyyy-MM-dd') === dStr && b.clinicId === clinicId);
+  }
+
+  async createBusinessHours(clinicId: string, data: Omit<BusinessHours, 'id' | 'createdAt' | 'updatedAt'>): Promise<BusinessHours> {
+    const newBusinessHours: BusinessHours = {
+      ...data,
+      id: `bh-${Math.random().toString(36).substr(2, 9)}`,
+      clinicId,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    MOCK_BUSINESS_HOURS.push(newBusinessHours);
+    return newBusinessHours;
+  }
+
+  async updateBusinessHours(id: string, clinicId: string, data: Partial<BusinessHours>): Promise<BusinessHours> {
+    const index = MOCK_BUSINESS_HOURS.findIndex((bh) => bh.id === id && bh.clinicId === clinicId);
+    if (index === -1) throw new Error('Business hours not found');
+    MOCK_BUSINESS_HOURS[index] = { ...MOCK_BUSINESS_HOURS[index], ...data, updatedAt: new Date() };
+    return MOCK_BUSINESS_HOURS[index];
+  }
+
+  async deleteBusinessHours(id: string, clinicId: string): Promise<void> {
+    const index = MOCK_BUSINESS_HOURS.findIndex((bh) => bh.id === id && bh.clinicId === clinicId);
+    if (index === -1) throw new Error('Business hours not found');
+    MOCK_BUSINESS_HOURS.splice(index, 1);
+  }
+
+  async createBlockedSlot(clinicId: string, data: Omit<BlockedSlot, 'id' | 'createdAt' | 'updatedAt'>): Promise<BlockedSlot> {
+    const newBlockedSlot: BlockedSlot = {
+      ...data,
+      id: `bs-${Math.random().toString(36).substr(2, 9)}`,
+      clinicId,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    MOCK_BLOCKED_SLOTS.push(newBlockedSlot);
+    return newBlockedSlot;
+  }
+
+  async updateBlockedSlot(id: string, clinicId: string, data: Partial<BlockedSlot>): Promise<BlockedSlot> {
+    const index = MOCK_BLOCKED_SLOTS.findIndex((bs) => bs.id === id && bs.clinicId === clinicId);
+    if (index === -1) throw new Error('Blocked slot not found');
+    MOCK_BLOCKED_SLOTS[index] = { ...MOCK_BLOCKED_SLOTS[index], ...data, updatedAt: new Date() };
+    return MOCK_BLOCKED_SLOTS[index];
+  }
+
+  async deleteBlockedSlot(id: string, clinicId: string): Promise<void> {
+    const index = MOCK_BLOCKED_SLOTS.findIndex((bs) => bs.id === id && bs.clinicId === clinicId);
+    if (index === -1) throw new Error('Blocked slot not found');
+    MOCK_BLOCKED_SLOTS.splice(index, 1);
   }
 }

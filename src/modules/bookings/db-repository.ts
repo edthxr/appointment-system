@@ -204,6 +204,60 @@ export class DbBookingRepository implements IBookingRepository {
     });
   }
 
+  async createBusinessHours(clinicId: string, data: Omit<BusinessHours, 'id' | 'createdAt' | 'updatedAt'>): Promise<BusinessHours> {
+    if (!db) throw new Error('Database not connected');
+    const [result] = await db.insert(businessHours).values({
+      ...data,
+      clinicId,
+    }).returning();
+    return result;
+  }
+
+  async updateBusinessHours(id: string, clinicId: string, data: Partial<BusinessHours>): Promise<BusinessHours> {
+    if (!db) throw new Error('Database not connected');
+    await db.update(businessHours)
+      .set({ ...data, updatedAt: new Date() })
+      .where(and(eq(businessHours.id, id), eq(businessHours.clinicId, clinicId)));
+    const result = await db.query.businessHours.findFirst({
+      where: and(eq(businessHours.id, id), eq(businessHours.clinicId, clinicId)),
+    });
+    if (!result) throw new Error('Business hours not found');
+    return result;
+  }
+
+  async deleteBusinessHours(id: string, clinicId: string): Promise<void> {
+    if (!db) throw new Error('Database not connected');
+    await db.delete(businessHours)
+      .where(and(eq(businessHours.id, id), eq(businessHours.clinicId, clinicId)));
+  }
+
+  async createBlockedSlot(clinicId: string, data: Omit<BlockedSlot, 'id' | 'createdAt' | 'updatedAt'>): Promise<BlockedSlot> {
+    if (!db) throw new Error('Database not connected');
+    const [result] = await db.insert(blockedSlots).values({
+      ...data,
+      clinicId,
+    }).returning();
+    return result;
+  }
+
+  async updateBlockedSlot(id: string, clinicId: string, data: Partial<BlockedSlot>): Promise<BlockedSlot> {
+    if (!db) throw new Error('Database not connected');
+    await db.update(blockedSlots)
+      .set({ ...data, updatedAt: new Date() })
+      .where(and(eq(blockedSlots.id, id), eq(blockedSlots.clinicId, clinicId)));
+    const result = await db.query.blockedSlots.findFirst({
+      where: and(eq(blockedSlots.id, id), eq(blockedSlots.clinicId, clinicId)),
+    });
+    if (!result) throw new Error('Blocked slot not found');
+    return result;
+  }
+
+  async deleteBlockedSlot(id: string, clinicId: string): Promise<void> {
+    if (!db) throw new Error('Database not connected');
+    await db.delete(blockedSlots)
+      .where(and(eq(blockedSlots.id, id), eq(blockedSlots.clinicId, clinicId)));
+  }
+
   private mapToEntity(data: any): Appointment {
     return {
       ...data,

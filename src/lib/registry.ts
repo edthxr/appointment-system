@@ -39,9 +39,8 @@ class RepositoryRegistry {
 
   get bookingRepo(): IBookingRepository {
     if (!this._bookingRepo) {
-      this._bookingRepo = env.USE_MOCK_DB === 'true' 
-        ? new MockBookingRepository() 
-        : new DbBookingRepository();
+      // Always use DB repository for production booking flow
+      this._bookingRepo = new DbBookingRepository();
     }
     return this._bookingRepo!;
   }

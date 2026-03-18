@@ -1,8 +1,9 @@
 import { Notification } from './service';
+import { PaginatedResult } from '@/lib/types';
 
 export interface INotificationRepository {
   create(data: Partial<Notification>): Promise<Notification>;
-  findByUserId(userId: string): Promise<Notification[]>;
+  findByUserId(userId: string, clinicId: string, page?: number, limit?: number): Promise<PaginatedResult<Notification>>;
 }
 
 export class MockNotificationRepository implements INotificationRepository {
@@ -23,7 +24,18 @@ export class MockNotificationRepository implements INotificationRepository {
     return newNotif;
   }
 
-  async findByUserId(userId: string): Promise<Notification[]> {
-    return this.notifications.filter(n => n.userId === userId);
+  async findByUserId(userId: string, clinicId: string, page = 1, limit = 10): Promise<PaginatedResult<Notification>> {
+    let filtered = this.notifications.filter(n => n.userId === userId);
+    
+    const start = (page - 1) * limit;
+    const data = filtered.slice(start, start + limit);
+    
+    return {
+      data,
+      total: filtered.length,
+      page,
+      limit,
+      totalPages: Math.ceil(filtered.length / limit),
+    };
   }
 }

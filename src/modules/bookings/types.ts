@@ -34,6 +34,8 @@ export interface BusinessHours {
   startTime: string;
   endTime: string;
   isOpen: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface BlockedSlot {
@@ -43,4 +45,6 @@ export interface BlockedSlot {
   startTime?: string | null;
   endTime?: string | null;
   reason?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
 }
