@@ -182,6 +182,10 @@ export class DbBookingRepository implements IBookingRepository {
         sql`DATE(${appointments.appointmentDate}) = ${dStr}`,
         eq(appointments.clinicId, clinicId)
       ),
+      with: {
+        user: true,
+        service: true,
+      }
     });
     return results.map(this.mapToEntity);
   }

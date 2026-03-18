@@ -10,9 +10,10 @@ const serviceService = new ServiceService(registry.serviceRepo);
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getSession();
     const canManage = session && [
       ROLES.SUPER_ADMIN, 
@@ -39,7 +40,7 @@ export async function PATCH(
     }
 
     const body = await req.json();
-    const service = await serviceService.updateService(params.id, clinicId, body);
+    const service = await serviceService.updateService(id, clinicId, body);
     return apiResponse.success(service, 'อัปเดตบริการสำเร็จ', 200);
   } catch (error: any) {
     return apiResponse.error(error.message || 'ไม่สามารถอัปเดตบริการได้', 400);
@@ -48,9 +49,10 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getSession();
     const canManage = session && [
       ROLES.SUPER_ADMIN, 
@@ -76,7 +78,7 @@ export async function DELETE(
       return apiResponse.error('clinicId or clinicSlug is required', 400);
     }
 
-    await serviceService.deleteService(params.id, clinicId);
+    await serviceService.deleteService(id, clinicId);
     return apiResponse.success(null, 'ลบบริการสำเร็จ', 200);
   } catch (error: any) {
     return apiResponse.error(error.message || 'ไม่สามารถลบบริการได้', 400);

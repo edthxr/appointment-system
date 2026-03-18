@@ -115,18 +115,31 @@ export default function AdminCalendarView({ clinicSlug, clinicName }: AdminCalen
         {/* Calendar View */}
         <div className="lg:col-span-8 card-luxury p-0! overflow-hidden border-none shadow-ios relative">
           <div className="p-8 border-b border-border-ios flex justify-between items-center bg-surface/50">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-4 bg-muted/30 px-5 py-2 rounded-2xl border border-border-ios/50">
               <button 
                 onClick={() => setShowPicker(showPicker === 'month' ? null : 'month')}
-                className="text-2xl font-display font-black tracking-tight text-foreground/90 lowercase first-letter:uppercase hover:text-accent transition-colors"
+                className="flex items-center gap-2 group"
               >
-                {format(currentDate, 'MMMM', { locale: th })}
+                <span className="text-2xl font-display font-black tracking-tight text-foreground lowercase first-letter:uppercase group-hover:text-accent transition-colors">
+                  {format(currentDate, 'MMMM', { locale: th })}
+                </span>
+                <svg className={`w-4 h-4 text-foreground-muted transition-transform duration-300 ${showPicker === 'month' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                </svg>
               </button>
+              
+              <div className="w-px h-6 bg-border-ios" />
+
               <button 
                 onClick={() => setShowPicker(showPicker === 'year' ? null : 'year')}
-                className="text-2xl font-display font-black tracking-tight text-foreground-muted hover:text-accent transition-colors"
+                className="flex items-center gap-2 group"
               >
-                {currentDate.getFullYear() + 543}
+                <span className="text-2xl font-display font-black tracking-tight text-accent group-hover:text-foreground transition-colors">
+                  {currentDate.getFullYear() + 543}
+                </span>
+                <svg className={`w-4 h-4 text-accent/50 transition-transform duration-300 ${showPicker === 'year' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                </svg>
               </button>
             </div>
             
@@ -298,13 +311,24 @@ export default function AdminCalendarView({ clinicSlug, clinicName }: AdminCalen
                         <div key={apt.id} className="group p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all duration-500">
                           <div className="flex items-center justify-between mb-3">
                              <div className="text-[11px] font-black tracking-[0.2em] text-accent uppercase">{apt.startTime} - {apt.endTime}</div>
-                             <span className="badge-luxury text-white! bg-accent! border-none!">
+                             <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${
+                               apt.status === 'confirmed' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
+                               apt.status === 'pending' ? 'bg-accent/10 text-accent border-accent/20' :
+                               'bg-red-500/10 text-red-500 border-red-500/20'
+                             }`}>
                                 {apt.status}
                              </span>
                           </div>
-                          <div className="font-display font-black text-lg tracking-tight mb-0.5">{apt.user?.name}</div>
-                          <div className="text-[11px] font-bold text-white/40 italic mb-4">{apt.service?.name}</div>
-                          <button className="w-full py-3 rounded-xl bg-white text-foreground text-[10px] font-black uppercase tracking-widest hover:bg-accent hover:text-white transition-all transform group-hover:translate-y-0 translate-y-2 opacity-0 group-hover:opacity-100">
+                          <div className="font-display font-black text-xl tracking-tighter mb-1 text-white group-hover:text-accent transition-colors">
+                            {apt.user?.name || 'Unknown Client'}
+                          </div>
+                          <div className="flex items-center gap-2 mb-5">
+                            <div className="w-1.5 h-1.5 rounded-full bg-accent/40" />
+                            <div className="text-[11px] font-bold text-white/50 uppercase tracking-widest">
+                              {apt.service?.name || 'General Service'}
+                            </div>
+                          </div>
+                          <button className="w-full py-4 rounded-xl bg-white text-foreground text-[10px] font-black uppercase tracking-widest hover:bg-accent hover:text-white transition-all transform group-hover:translate-y-0 translate-y-2 opacity-0 group-hover:opacity-100 shadow-xl">
                              Manage Appointment
                           </button>
                         </div>

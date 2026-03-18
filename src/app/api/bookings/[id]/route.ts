@@ -11,9 +11,10 @@ const bookingService = new BookingService(registry.bookingRepo, registry.service
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getSession();
     if (!session) {
       return apiResponse.error('กรุณาเข้าสู่ระบบ', 401);
@@ -33,9 +34,9 @@ export async function PATCH(
 
     const body = await req.json();
     const { status } = body;
-
+ 
     const updated = await bookingService.updateStatus(
-      params.id,
+      id,
       clinic.id,
       status,
       session.id,
