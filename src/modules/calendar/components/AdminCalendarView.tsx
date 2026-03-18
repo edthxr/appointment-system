@@ -278,57 +278,60 @@ export default function AdminCalendarView({ clinicSlug, clinicName }: AdminCalen
 
         {/* Selected Date Details */}
         <div className="lg:col-span-4 space-y-6">
-          <div className="card-luxury bg-foreground! border-none! text-white shadow-2xl">
-             <div className="flex items-start justify-between mb-8">
+          <div className="card-luxury bg-surface border-border-ios/50 shadow-ios relative overflow-hidden">
+             {/* Decorative Background Element */}
+             <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-full -mr-16 -mt-16 blur-3xl" />
+             
+             <div className="flex items-start justify-between mb-8 relative z-10">
                 <div>
-                   <h3 className="text-3xl font-display font-black tracking-tighter mb-1">
+                   <h3 className="text-4xl font-display font-black tracking-tighter text-foreground mb-1">
                       {selectedDate ? format(selectedDate, 'd', { locale: th }) : ''}
                    </h3>
-                   <p className="text-[11px] font-black uppercase tracking-[0.3em] opacity-60">
+                   <p className="text-[11px] font-black uppercase tracking-[0.3em] text-foreground-muted">
                       {selectedDate ? format(selectedDate, 'MMMM yyyy', { locale: th }) : ''}
                    </p>
                 </div>
-                <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-md">
+                <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center border border-border-ios shadow-sm">
                    <svg className="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2-2v12a2 2 0 002 2z" />
                    </svg>
                 </div>
              </div>
              
-             <div className="space-y-4">
+             <div className="space-y-4 relative z-10">
                 {(() => {
                   const dayEvents = selectedDate ? getEventsForDate(selectedDate) : null;
                   if (!dayEvents || dayEvents.appointments.length === 0) {
                     return (
-                      <div className="py-8 text-center border-t border-white/10 mt-6">
-                         <div className="text-[11px] font-black uppercase tracking-widest opacity-40">No Bookings Found</div>
+                      <div className="py-12 text-center border-t border-border-ios/50 mt-6">
+                         <div className="text-[10px] font-black uppercase tracking-widest text-foreground-muted opacity-40">No Bookings Scheduled</div>
                       </div>
                     );
                   }
                   return (
-                    <div className="space-y-3 pt-6 border-t border-white/10">
+                    <div className="space-y-4 pt-6 border-t border-border-ios/50">
                       {dayEvents.appointments.map((apt) => (
-                        <div key={apt.id} className="group p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all duration-500">
-                          <div className="flex items-center justify-between mb-3">
-                             <div className="text-[11px] font-black tracking-[0.2em] text-accent uppercase">{apt.startTime} - {apt.endTime}</div>
-                             <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${
-                               apt.status === 'confirmed' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
-                               apt.status === 'pending' ? 'bg-accent/10 text-accent border-accent/20' :
-                               'bg-red-500/10 text-red-500 border-red-500/20'
+                        <div key={apt.id} className="group p-5 rounded-2xl bg-white border border-border-ios/50 hover:border-accent/30 hover:shadow-md transition-all duration-500">
+                          <div className="flex items-center justify-between mb-4">
+                             <div className="text-[10px] font-black tracking-[0.2em] text-accent uppercase bg-accent/5 px-2.5 py-1 rounded-md">{apt.startTime} - {apt.endTime}</div>
+                             <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border transition-colors ${
+                               apt.status === 'confirmed' ? 'bg-green-500/5 text-green-600 border-green-500/20' :
+                               apt.status === 'pending' ? 'bg-accent/5 text-accent border-accent/20' :
+                               'bg-red-500/5 text-red-500 border-red-500/20'
                              }`}>
                                 {apt.status}
                              </span>
                           </div>
-                          <div className="font-display font-black text-xl tracking-tighter mb-1 text-white group-hover:text-accent transition-colors">
+                          <div className="font-display font-black text-xl tracking-tighter mb-1 text-foreground group-hover:text-accent transition-colors">
                             {apt.user?.name || 'Unknown Client'}
                           </div>
-                          <div className="flex items-center gap-2 mb-5">
+                          <div className="flex items-center gap-2 mb-6">
                             <div className="w-1.5 h-1.5 rounded-full bg-accent/40" />
-                            <div className="text-[11px] font-bold text-white/50 uppercase tracking-widest">
+                            <div className="text-[11px] font-bold text-foreground-muted uppercase tracking-[0.15em]">
                               {apt.service?.name || 'General Service'}
                             </div>
                           </div>
-                          <button className="w-full py-4 rounded-xl bg-white text-foreground text-[10px] font-black uppercase tracking-widest hover:bg-accent hover:text-white transition-all transform group-hover:translate-y-0 translate-y-2 opacity-0 group-hover:opacity-100 shadow-xl">
+                          <button className="w-full py-4 rounded-xl bg-foreground text-white text-[10px] font-black uppercase tracking-widest hover:bg-accent transition-all shadow-sm">
                              Manage Appointment
                           </button>
                         </div>
