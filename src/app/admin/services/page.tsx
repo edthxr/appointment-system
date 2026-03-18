@@ -4,10 +4,12 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Service } from '@/modules/services/types';
 import Pagination from '@/components/Pagination';
 import DataTable, { Column } from '@/components/DataTable';
+import { ROLES, Role } from '@/lib/constants';
 
 export default function AdminServicesPage() {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
+  const [session, setSession] = useState<{ id: string, role: string } | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [total, setTotal] = useState(0);
@@ -17,6 +19,17 @@ export default function AdminServicesPage() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   const clinicSlug = 'aura-premium';
+
+  // Fetch Session
+  useEffect(() => {
+    fetch('/api/auth')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) setSession(data.data);
+      });
+  }, []);
+
+  const canManage = session && [ROLES.SUPER_ADMIN, ROLES.CLINIC_OWNER, ROLES.CLINIC_ADMIN, ROLES.ADMIN].includes(session.role as any);
 
   // Search debouncing
   useEffect(() => {
@@ -52,6 +65,7 @@ export default function AdminServicesPage() {
   const [formData, setFormData] = useState({ name: '', description: '', durationMin: 30, price: 0, isActive: true });
 
   const handleOpenModal = (service: any = null) => {
+    if (!canManage) return;
     if (service) {
       setEditingService(service);
       setFormData({ 
@@ -70,6 +84,7 @@ export default function AdminServicesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canManage) return;
     const url = editingService ? `/api/services/${editingService.id}?clinicSlug=${clinicSlug}` : `/api/services`;
     const method = editingService ? 'PATCH' : 'POST';
 
@@ -92,6 +107,7 @@ export default function AdminServicesPage() {
   };
 
   const handleDelete = async (id: string) => {
+    if (!canManage) return;
     if (!confirm('คุณต้องการลบบริการนี้ใช่หรือไม่?')) return;
     try {
       const res = await fetch(`/api/services/${id}?clinicSlug=${clinicSlug}`, { method: 'DELETE' });
@@ -152,11 +168,11 @@ export default function AdminServicesPage() {
         </span>
       )
     },
-    {
+    ...(canManage ? [{
       header: 'Actions',
       accessorKey: 'actions',
       className: 'text-right',
-      cell: (s) => (
+      cell: (s: Service) => (
         <div className="flex justify-end gap-6">
           <button 
             onClick={() => handleOpenModal(s)}
@@ -172,7 +188,7 @@ export default function AdminServicesPage() {
           </button>
         </div>
       )
-    }
+    }] : [])
   ];
 
   return (
@@ -182,15 +198,17 @@ export default function AdminServicesPage() {
           <h1 className="text-4xl font-display font-black text-foreground tracking-tighter mb-2">Clinic Services</h1>
           <p className="text-[13px] font-bold text-foreground-muted uppercase tracking-widest">Procedural Menu Management</p>
         </div>
-        <button 
-          onClick={() => handleOpenModal()}
-          className="bg-foreground text-white px-8 py-4 rounded-full font-black uppercase text-[12px] tracking-widest hover:bg-foreground/80 transition-all shadow-lg active:scale-95 flex items-center gap-3 self-start md:self-auto"
-        >
-          <svg className="w-5 h-5 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-          </svg>
-          Add New Service
-        </button>
+        {canManage && (
+          <button 
+            onClick={() => handleOpenModal()}
+            className="bg-foreground text-white px-8 py-4 rounded-full font-black uppercase text-[12px] tracking-widest hover:bg-foreground/80 transition-all shadow-lg active:scale-95 flex items-center gap-3 self-start md:self-auto"
+          >
+            <svg className="w-5 h-5 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            Add New Service
+          </button>
+        )}
       </div>
 
       <div className="mb-8 max-w-md">

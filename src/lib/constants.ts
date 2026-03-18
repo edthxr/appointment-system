@@ -1,10 +1,12 @@
 export const ROLES = {
   SUPER_ADMIN: 'super_admin',
+  CLINIC_OWNER: 'clinic_owner',
   CLINIC_ADMIN: 'clinic_admin',
-  STAFF: 'staff',
+  CLINIC_STAFF: 'clinic_staff',
   CUSTOMER: 'customer',
   // Backward compatibility/Legacy
   ADMIN: 'admin', 
+  STAFF: 'staff',
   USER: 'user',
 } as const;
 

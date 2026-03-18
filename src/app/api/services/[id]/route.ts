@@ -3,6 +3,8 @@ import { apiResponse } from '@/lib/api-response';
 import { registry } from '@/lib/registry';
 import { ServiceService } from '@/modules/services/service';
 import { getSession } from '@/lib/session';
+import { ROLES } from '@/lib/constants';
+import { getClinicBySlug } from '@/lib/tenant';
 
 const serviceService = new ServiceService(registry.serviceRepo);
 
@@ -12,13 +14,33 @@ export async function PATCH(
 ) {
   try {
     const session = await getSession();
-    if (!session || session.role !== 'admin') {
+    const canManage = session && [
+      ROLES.SUPER_ADMIN, 
+      ROLES.CLINIC_OWNER, 
+      ROLES.CLINIC_ADMIN, 
+      ROLES.ADMIN
+    ].includes(session.role as any);
+
+    if (!canManage) {
       return apiResponse.error('ไม่มีสิทธิ์เข้าถึง', 403);
     }
 
+    const { searchParams } = new URL(req.url);
+    let clinicId = searchParams.get('clinicId');
+    const clinicSlug = searchParams.get('clinicSlug');
+
+    if (!clinicId && clinicSlug) {
+      const clinic = await getClinicBySlug(clinicSlug);
+      clinicId = clinic?.id || null;
+    }
+
+    if (!clinicId) {
+      return apiResponse.error('clinicId or clinicSlug is required', 400);
+    }
+
     const body = await req.json();
-    const service = await serviceService.updateService(params.id, body);
-    return apiResponse.success(service, 'อัปเดตบริการสำเร็จ');
+    const service = await serviceService.updateService(params.id, clinicId, body);
+    return apiResponse.success(service, 'อัปเดตบริการสำเร็จ', 200);
   } catch (error: any) {
     return apiResponse.error(error.message || 'ไม่สามารถอัปเดตบริการได้', 400);
   }
@@ -30,12 +52,32 @@ export async function DELETE(
 ) {
   try {
     const session = await getSession();
-    if (!session || session.role !== 'admin') {
+    const canManage = session && [
+      ROLES.SUPER_ADMIN, 
+      ROLES.CLINIC_OWNER, 
+      ROLES.CLINIC_ADMIN, 
+      ROLES.ADMIN
+    ].includes(session.role as any);
+
+    if (!canManage) {
       return apiResponse.error('ไม่มีสิทธิ์เข้าถึง', 403);
     }
 
-    await serviceService.deleteService(params.id);
-    return apiResponse.success(null, 'ลบบริการสำเร็จ');
+    const { searchParams } = new URL(req.url);
+    let clinicId = searchParams.get('clinicId');
+    const clinicSlug = searchParams.get('clinicSlug');
+
+    if (!clinicId && clinicSlug) {
+      const clinic = await getClinicBySlug(clinicSlug);
+      clinicId = clinic?.id || null;
+    }
+
+    if (!clinicId) {
+      return apiResponse.error('clinicId or clinicSlug is required', 400);
+    }
+
+    await serviceService.deleteService(params.id, clinicId);
+    return apiResponse.success(null, 'ลบบริการสำเร็จ', 200);
   } catch (error: any) {
     return apiResponse.error(error.message || 'ไม่สามารถลบบริการได้', 400);
   }

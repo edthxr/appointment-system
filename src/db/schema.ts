@@ -20,7 +20,7 @@ export const users = pgTable('users', {
   email: text('email').unique().notNull(),
   phone: text('phone'),
   passwordHash: text('password_hash').notNull(),
-  role: text('role', { enum: ['super_admin', 'user'] }).default('user').notNull(),
+   role: text('role', { enum: ['super_admin', 'clinic_owner', 'clinic_admin', 'clinic_staff', 'user'] }).default('user').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
@@ -30,7 +30,7 @@ export const clinicUsers = pgTable('clinic_users', {
   id: uuid('id').defaultRandom().primaryKey(),
   clinicId: uuid('clinic_id').references(() => clinics.id).notNull(),
   userId: uuid('user_id').references(() => users.id).notNull(),
-  role: text('role', { enum: ['clinic_admin', 'staff', 'customer'] }).default('customer').notNull(),
+  role: text('role', { enum: ['clinic_owner', 'clinic_admin', 'clinic_staff', 'customer'] }).default('customer').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });

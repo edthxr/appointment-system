@@ -3,6 +3,7 @@ import { apiResponse } from '@/lib/api-response';
 import { registry } from '@/lib/registry';
 import { ServiceService } from '@/modules/services/service';
 import { getSession } from '@/lib/session';
+import { ROLES } from '@/lib/constants';
 
 import { getClinicBySlug } from '@/lib/tenant';
 
@@ -45,7 +46,14 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const session = await getSession();
-    if (!session || session.role !== 'admin') {
+    const canManage = session && [
+      ROLES.SUPER_ADMIN, 
+      ROLES.CLINIC_OWNER, 
+      ROLES.CLINIC_ADMIN, 
+      ROLES.ADMIN
+    ].includes(session.role as any);
+
+    if (!canManage) {
       return apiResponse.error('ไม่มีสิทธิ์เข้าถึง', 403);
     }
 

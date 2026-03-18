@@ -3,7 +3,17 @@ import { apiResponse } from '@/lib/api-response';
 import { AuthService } from '@/modules/auth/service';
 import { registry } from '@/lib/registry';
 
+import { getSession } from '@/lib/session';
+
 const authService = new AuthService(registry.userRepo);
+
+export async function GET() {
+  const session = await getSession();
+  if (!session) {
+    return apiResponse.error('Not authenticated', 401);
+  }
+  return apiResponse.success(session);
+}
 
 export async function POST(req: NextRequest) {
   try {

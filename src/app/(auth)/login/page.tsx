@@ -100,7 +100,9 @@ export default function LoginPage() {
             Demo Access
           </p>
           <div className="text-[11px] font-bold text-foreground-muted/70 flex flex-col gap-1">
+            <span>Owner: owner@example.com / owner123</span>
             <span>Admin: admin@example.com / admin123</span>
+            <span>Staff: staff@example.com / staff123</span>
             <span>User: user@example.com / user123</span>
           </div>
         </div>

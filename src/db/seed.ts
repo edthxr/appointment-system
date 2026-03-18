@@ -1,5 +1,5 @@
 import { pool, db } from './client';
-import { users, clinics, clinicUsers, services, businessHours } from './schema';
+import { users, clinics, clinicUsers, services, businessHours, appointments, notifications } from './schema';
 import { ROLES } from '@/lib/constants';
 import bcrypt from 'bcryptjs';
 
@@ -12,6 +12,9 @@ async function seed() {
   console.log('Seed started...');
 
   // Clear existing data to avoid unique constraint violations
+  // Delete in order of dependencies
+  await db.delete(notifications);
+  await db.delete(appointments);
   await db.delete(clinicUsers);
   await db.delete(businessHours);
   await db.delete(services);
@@ -19,6 +22,8 @@ async function seed() {
   await db.delete(clinics);
 
   const adminHash = bcrypt.hashSync('admin123', 10);
+  const ownerHash = bcrypt.hashSync('owner123', 10);
+  const staffHash = bcrypt.hashSync('staff123', 10);
   const userHash = bcrypt.hashSync('user123', 10);
 
   // 1. Seed Clinic
@@ -32,15 +37,29 @@ async function seed() {
 
   // 2. Seed Users
   const [adminUser] = await db.insert(users).values({
-    name: 'System Admin',
+    name: 'Clinic Admin',
     email: 'admin@example.com',
     passwordHash: adminHash,
-    role: ROLES.SUPER_ADMIN,
+    role: ROLES.CLINIC_ADMIN,
+  }).returning();
+
+  const [ownerUser] = await db.insert(users).values({
+    name: 'Clinic Owner',
+    email: 'owner@example.com',
+    passwordHash: ownerHash,
+    role: ROLES.CLINIC_OWNER,
+  }).returning();
+
+  const [staffUser] = await db.insert(users).values({
+    name: 'Clinic Staff',
+    email: 'staff@example.com',
+    passwordHash: staffHash,
+    role: ROLES.CLINIC_STAFF,
   }).returning();
 
   const [customerUser] = await db.insert(users).values({
     name: 'John Doe',
-    email: 'user@example.com', // Changed back to user@example.com to match demo text
+    email: 'user@example.com',
     passwordHash: userHash,
     role: ROLES.USER,
   }).returning();
@@ -49,8 +68,18 @@ async function seed() {
   await db.insert(clinicUsers).values([
     {
       clinicId: defaultClinic.id,
+      userId: ownerUser.id,
+      role: ROLES.CLINIC_OWNER,
+    },
+    {
+      clinicId: defaultClinic.id,
       userId: adminUser.id,
       role: ROLES.CLINIC_ADMIN,
+    },
+    {
+      clinicId: defaultClinic.id,
+      userId: staffUser.id,
+      role: ROLES.CLINIC_STAFF,
     },
     {
       clinicId: defaultClinic.id,

@@ -1,9 +1,9 @@
-## บัญชีสำหรับทดสอบ (Demo Credentials)
-
-| Role | Email | Password | Scope |
+| Role | Email | Password | Scope / Permissions |
 | :--- | :--- | :--- | :--- |
-| **Admin** | `admin@example.com` | `admin123` | super_admin / clinic_admin |
-| **User** | `user@example.com` | `user123` | customer |
+| **Clinic Owner** | `owner@example.com` | `owner123` | จัดการได้ทุกอย่างในคลินิกตัวเอง |
+| **Clinic Admin** | `admin@example.com` | `admin123` | จัดการบริการและข้อมูลทั่วไป |
+| **Clinic Staff** | `staff@example.com` | `staff123` | ดูข้อมูลและจัดการนัดหมาย |
+| **Customer** | `user@example.com` | `user123` | จองนัดหมายและดูประวัติตัวเอง |
 
 ---
 
@@ -13,6 +13,11 @@
 > [!NOTE]
 > รายละเอียดโครงสร้างตาราง (Data Dictionary) และความสัมพันธ์ของฐานข้อมูลทั้งหมด สามารถอ่านเพิ่มเติมได้ที่:
 > [**src/db/SCHEMA_DOCS.md**](file:///c:/appointment-system/appointment-system/src/db/SCHEMA_DOCS.md)
+
+---
+
+> [!IMPORTANT]
+> **API Multi-tenancy**: ทุกการเรียก API (GET, POST, PATCH, DELETE) ที่เกี่ยวข้องกับข้อมูลเฉพาะคลินิก เช่น `/api/services` หรือ `/api/bookings` **ต้อง** ส่ง `clinicId` หรือ `clinicSlug` มาใน Query Parameters เสมอ เพื่อให้ระบบสามารถแยกข้อมูล (Data Isolation) ได้ถูกต้อง
 
 ---
 
@@ -59,7 +64,7 @@ name	TEXT	ชื่อ-นามสกุล ของผู้ใช้
 email	TEXT	อีเมลสำหรับใช้เข้าสู่ระบบ (ต้องไม่ซ้ำกัน)
 phone	TEXT	เบอร์โทรศัพท์ติดต่อ
 password_hash	TEXT	รหัสผ่านที่เข้ารหัสด้วย Bcrypt
-role	ENUM	บทบาทระดับโลก: super_admin หรือ user
+role	ENUM	super_admin, clinic_owner, clinic_admin, clinic_staff, customer
 created_at	TIMESTAMP	เวลาที่สร้างเรคคอร์ด
 updated_at	TIMESTAMP	เวลาที่อัปเดตข้อมูลล่าสุด
 ________________________________________
