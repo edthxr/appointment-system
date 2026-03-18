@@ -1,8 +1,8 @@
 import { IUserRepository } from './repository';
 import { User, RegisterInput } from './types';
 import { db } from '@/db/client';
-import { users } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { users, clinicUsers } from '@/db/schema';
+import { eq, and, inArray } from 'drizzle-orm';
 import { ROLES } from '@/lib/constants';
 
 export class DbUserRepository implements IUserRepository {
@@ -50,5 +50,27 @@ export class DbUserRepository implements IUserRepository {
       passwordHash,
       updatedAt: new Date(),
     }).where(eq(users.id, id));
+  }
+
+  async findStaffByClinicId(clinicId: string): Promise<User[]> {
+    const result = await db!.select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      phone: users.phone,
+      role: clinicUsers.role,
+      createdAt: users.createdAt,
+      updatedAt: users.updatedAt,
+    })
+    .from(clinicUsers)
+    .innerJoin(users, eq(users.id, clinicUsers.userId))
+    .where(
+      and(
+        eq(clinicUsers.clinicId, clinicId),
+        inArray(clinicUsers.role, ['clinic_owner', 'clinic_admin', 'clinic_staff'])
+      )
+    );
+    
+    return result as User[];
   }
 }

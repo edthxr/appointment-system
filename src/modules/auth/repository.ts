@@ -8,6 +8,7 @@ export interface IUserRepository {
   create(data: RegisterInput & { passwordHash: string }): Promise<User>;
   update(id: string, data: Partial<User>): Promise<User>;
   updatePassword(id: string, passwordHash: string): Promise<void>;
+  findStaffByClinicId(clinicId: string): Promise<User[]>;
 }
 
 const MOCK_USERS: User[] = [
@@ -66,5 +67,9 @@ export class MockUserRepository implements IUserRepository {
     const index = MOCK_USERS.findIndex((u) => u.id === id);
     if (index === -1) throw new Error('User not found');
     // In mock, we don't store password hashes permanently, just simulate success
+  }
+
+  async findStaffByClinicId(clinicId: string): Promise<User[]> {
+    return MOCK_USERS.filter(u => u.role !== 'user' && u.role !== 'customer');
   }
 }

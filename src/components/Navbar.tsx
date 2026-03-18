@@ -19,24 +19,37 @@ export function Navbar({
   const clinicLabel = clinic?.name || 'Aura Clinic';
   const clinicSlug = clinic?.slug;
 
-  const publicLinks = [
+  type NavLink = {
+    href: string;
+    label: string;
+    subLinks?: { href: string; label: string }[];
+  };
+
+  const publicLinks: NavLink[] = [
     { href: clinicSlug ? `/c/${clinicSlug}` : '/', label: 'หน้าแรก' },
     { href: clinicSlug ? `/c/${clinicSlug}/services` : '/services', label: 'บริการของเรา' },
     { href: clinicSlug ? `/c/${clinicSlug}/booking` : '/booking', label: 'จองคิว' },
   ];
 
-  const userLinks = [
+  const userLinks: NavLink[] = [
     ...publicLinks,
     { href: clinicSlug ? `/c/${clinicSlug}/my-bookings` : '/my-bookings', label: 'รายการจองของฉัน' },
   ];
 
-  const adminLinks = [
+  const adminLinks: NavLink[] = [
     { href: '/admin/dashboard', label: 'Dashboard' },
     { href: '/admin/appointments', label: 'รายการนัดหมาย' },
     { href: '/admin/calendar', label: 'ปฏิทิน' },
     { href: '/admin/notifications', label: 'การแจ้งเตือน' },
     { href: '/admin/services', label: 'จัดการบริการ' },
-    { href: '/admin/settings', label: 'ตั้งค่า' },
+    { 
+      href: '/admin/settings', 
+      label: 'ตั้งค่า',
+      subLinks: [
+        { href: '/admin/settings', label: 'ข้อมูลคลินิก' },
+        { href: '/admin/settings/staff', label: 'จัดการบุคลากร' }
+      ]
+    },
     { href: '/admin/profile', label: 'โปรไฟล์' },
   ];
 
@@ -65,18 +78,45 @@ export function Navbar({
             </Link>
             <div className="hidden md:flex items-center gap-8">
               {links.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={cn(
-                    "text-[13px] font-bold uppercase tracking-widest transition-all duration-300",
-                    pathname === link.href
-                      ? "text-accent"
-                      : "text-foreground-muted hover:text-foreground"
+                <div key={link.href} className="relative group/nav">
+                  <Link
+                    href={link.href}
+                    className={cn(
+                      "text-[13px] font-bold uppercase tracking-widest transition-all duration-300 py-4 flex items-center gap-1",
+                      pathname === link.href || (link.subLinks && pathname.startsWith(link.href))
+                        ? "text-accent"
+                        : "text-foreground-muted hover:text-foreground"
+                    )}
+                  >
+                    {link.label}
+                    {link.subLinks && (
+                      <svg className="w-3 h-3 opacity-50 group-hover/nav:rotate-180 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    )}
+                  </Link>
+
+                  {link.subLinks && (
+                    <div className="absolute top-[80%] pt-2 left-1/2 -translate-x-1/2 opacity-0 pointer-events-none group-hover/nav:opacity-100 group-hover/nav:pointer-events-auto group-hover/nav:top-full transition-all duration-300 z-50">
+                      <div className="bg-white/95 backdrop-blur-xl border border-border-ios/50 rounded-2xl shadow-2xl overflow-hidden min-w-[220px] p-2 flex flex-col gap-1">
+                        {link.subLinks.map(sub => (
+                          <Link
+                            key={sub.href}
+                            href={sub.href}
+                            className={cn(
+                              "px-4 py-3 text-[11px] font-black uppercase tracking-widest rounded-xl transition-all duration-200",
+                              pathname === sub.href
+                                ? "bg-accent/10 text-accent"
+                                : "text-foreground-muted hover:bg-muted/80 hover:text-foreground hover:pl-5"
+                            )}
+                          >
+                            {sub.label}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
                   )}
-                >
-                  {link.label}
-                </Link>
+                </div>
               ))}
             </div>
           </div>
