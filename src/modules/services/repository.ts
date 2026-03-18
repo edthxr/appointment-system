@@ -1,7 +1,8 @@
+import { PaginatedResult } from '@/lib/types';
 import { Service, CreateServiceInput, UpdateServiceInput } from './types';
 
 export interface IServiceRepository {
-  findAll(clinicId: string): Promise<Service[]>;
+  findAll(clinicId: string, page?: number, limit?: number, search?: string): Promise<PaginatedResult<Service>>;
   findById(id: string, clinicId: string): Promise<Service | null>;
   create(data: CreateServiceInput): Promise<Service>;
   update(id: string, clinicId: string, data: UpdateServiceInput): Promise<Service>;
@@ -35,8 +36,26 @@ const MOCK_SERVICES: Service[] = [
 ];
 
 export class MockServiceRepository implements IServiceRepository {
-  async findAll(clinicId: string): Promise<Service[]> {
-    return MOCK_SERVICES.filter(s => s.clinicId === clinicId);
+  async findAll(clinicId: string, page = 1, limit = 10, search?: string): Promise<PaginatedResult<Service>> {
+    let all = MOCK_SERVICES.filter(s => s.clinicId === clinicId);
+    
+    if (search) {
+      const q = search.toLowerCase();
+      all = all.filter(s => 
+        s.name.toLowerCase().includes(q) || 
+        (s.description?.toLowerCase().includes(q))
+      );
+    }
+
+    const start = (page - 1) * limit;
+    const data = all.slice(start, start + limit);
+    return {
+      data,
+      total: all.length,
+      page,
+      limit,
+      totalPages: Math.ceil(all.length / limit),
+    };
   }
   async findById(id: string, clinicId: string): Promise<Service | null> {
     return MOCK_SERVICES.find((s) => s.id === id && s.clinicId === clinicId) || null;

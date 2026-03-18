@@ -1,31 +1,51 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import Pagination from '@/components/Pagination';
 
 export default function AdminServicesPage() {
   const [services, setServices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
 
   const clinicSlug = 'aura-premium';
 
+  // Search debouncing
   useEffect(() => {
-    fetch(`/api/services?clinicSlug=${clinicSlug}`)
-      .then(res => res.json())
-      .then(res => { if (res.success) setServices(res.data); })
-      .finally(() => setLoading(false));
-  }, []);
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  const fetchServices = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/services?clinicSlug=${clinicSlug}&page=${page}&limit=${pageSize}&search=${debouncedSearch}`);
+      const data = await res.json();
+      if (data.success) {
+        setServices(data.data);
+        setTotal(data.pagination?.total || 0);
+      }
+    } catch (err) {
+      console.error('Failed to fetch services:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [page, pageSize, clinicSlug, debouncedSearch]);
+
+  useEffect(() => {
+    fetchServices();
+  }, [fetchServices]);
 
   const [showModal, setShowModal] = useState(false);
   const [editingService, setEditingService] = useState<any>(null);
   const [formData, setFormData] = useState({ name: '', description: '', durationMin: 30, price: 0, isActive: true });
-
-  const fetchServices = () => {
-    setLoading(true);
-    fetch(`/api/services?clinicSlug=${clinicSlug}`)
-      .then(res => res.json())
-      .then(res => { if (res.success) setServices(res.data); })
-      .finally(() => setLoading(false));
-  };
 
   const handleOpenModal = (service: any = null) => {
     if (service) {
@@ -97,6 +117,36 @@ export default function AdminServicesPage() {
         </button>
       </div>
 
+      <div className="mb-8 max-w-md">
+        <div className="relative group">
+          <input
+            type="text"
+            placeholder="Search Services..."
+            className="w-full pl-12 pr-6 py-4 rounded-2xl bg-white border border-border-ios shadow-sm focus:ring-2 focus:ring-accent/10 focus:border-accent transition-all font-medium text-[13px]"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <svg 
+            className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-foreground-muted group-focus-within:text-accent transition-colors" 
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          {search && (
+            <button 
+              onClick={() => setSearch('')}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-foreground-muted hover:text-foreground p-1"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
+      </div>
+
       <div className="card-luxury p-0 overflow-hidden border-border-ios/60">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-border-ios">
@@ -154,6 +204,16 @@ export default function AdminServicesPage() {
             </tbody>
           </table>
         </div>
+        <Pagination 
+          page={page}
+          pageSize={pageSize}
+          total={total}
+          onPageChange={setPage}
+          onPageSizeChange={(size) => {
+            setPageSize(size);
+            setPage(1);
+          }}
+        />
       </div>
 
       {showModal && (

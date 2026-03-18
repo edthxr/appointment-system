@@ -1,20 +1,48 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { format } from 'date-fns';
+import Pagination from '@/components/Pagination';
 
 export default function AdminAppointmentsPage() {
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
 
   const clinicSlug = 'aura-premium';
 
+  // Search debouncing
   useEffect(() => {
-    fetch(`/api/appointments?clinicSlug=${clinicSlug}`)
-      .then(res => res.json())
-      .then(res => { if (res.success) setAppointments(res.data); })
-      .finally(() => setLoading(false));
-  }, []);
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  const fetchAppointments = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/appointments?clinicSlug=${clinicSlug}&page=${page}&limit=${pageSize}&search=${debouncedSearch}`);
+      const data = await res.json();
+      if (data.success) {
+        setAppointments(data.data);
+        setTotal(data.pagination?.total || 0);
+      }
+    } catch (err) {
+      console.error('Failed to fetch appointments:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [page, pageSize, clinicSlug, debouncedSearch]);
+
+  useEffect(() => {
+    fetchAppointments();
+  }, [fetchAppointments]);
 
   const handleUpdateStatus = async (id: string, status: string) => {
     try {
@@ -42,7 +70,37 @@ export default function AdminAppointmentsPage() {
           <p className="text-[13px] font-bold text-foreground-muted uppercase tracking-widest">Client Service Masterlist</p>
         </div>
         <div className="text-[11px] font-black text-foreground-muted italic bg-muted px-4 py-2 rounded-full border border-border-ios">
-          Showing {appointments.length} scheduled visits
+          Showing {appointments.length} of {total} scheduled visits
+        </div>
+      </div>
+
+      <div className="mb-8 max-w-md">
+        <div className="relative group">
+          <input
+            type="text"
+            placeholder="Search Appointments..."
+            className="w-full pl-12 pr-6 py-4 rounded-2xl bg-white border border-border-ios shadow-sm focus:ring-2 focus:ring-accent/10 focus:border-accent transition-all font-medium text-[13px]"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <svg 
+            className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-foreground-muted group-focus-within:text-accent transition-colors" 
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          {search && (
+            <button 
+              onClick={() => setSearch('')}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-foreground-muted hover:text-foreground p-1"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
         </div>
       </div>
 
@@ -111,6 +169,16 @@ export default function AdminAppointmentsPage() {
             </tbody>
           </table>
         </div>
+        <Pagination 
+          page={page}
+          pageSize={pageSize}
+          total={total}
+          onPageChange={setPage}
+          onPageSizeChange={(size) => {
+            setPageSize(size);
+            setPage(1);
+          }}
+        />
       </div>
     </div>
   );

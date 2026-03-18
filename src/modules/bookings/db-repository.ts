@@ -1,33 +1,112 @@
 import { db } from '@/db/client';
 import { appointments, services, users, businessHours, blockedSlots } from '@/db/schema';
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and, sql, count, or, ilike, exists } from 'drizzle-orm';
 import { IBookingRepository } from './repository';
 import { Appointment, CreateBookingInput, BusinessHours, BlockedSlot } from './types';
 import { format } from 'date-fns';
 import { APPOINTMENT_STATUS } from '@/lib/constants';
+import { PaginatedResult } from '@/lib/types';
 
 export class DbBookingRepository implements IBookingRepository {
-  async findAll(clinicId: string): Promise<Appointment[]> {
+  async findAll(clinicId: string, page = 1, limit = 10, search?: string): Promise<PaginatedResult<Appointment>> {
     if (!db) throw new Error('Database not connected');
+    
+    const offset = (page - 1) * limit;
+    const filters = [eq(appointments.clinicId, clinicId)];
+
+    if (search) {
+      const sp = `%${search}%`;
+      filters.push(or(
+        ilike(appointments.status, sp),
+        // Relationship filtering via exists
+        exists(
+          db.select().from(users).where(and(
+            eq(users.id, appointments.userId),
+            or(ilike(users.name, sp), ilike(users.email, sp))
+          ))
+        ),
+        exists(
+          db.select().from(services).where(and(
+            eq(services.id, appointments.serviceId),
+            ilike(services.name, sp)
+          ))
+        )
+      )!);
+    }
+
+    const whereClause = and(...filters);
+
+    const [totalResult] = await db.select({ value: count() })
+      .from(appointments)
+      .where(whereClause);
+    
+    const total = totalResult.value;
+
     const results = await db.query.appointments.findMany({
-      where: eq(appointments.clinicId, clinicId),
+      where: whereClause,
+      limit,
+      offset,
       with: {
         user: true,
         service: true,
       }
     });
-    return results.map(this.mapToEntity);
+
+    return {
+      data: results.map(this.mapToEntity),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
-  async findByUserId(userId: string, clinicId: string): Promise<Appointment[]> {
+  async findByUserId(userId: string, clinicId: string, page = 1, limit = 10, search?: string): Promise<PaginatedResult<Appointment>> {
     if (!db) throw new Error('Database not connected');
+    
+    const offset = (page - 1) * limit;
+    const filters = [
+      eq(appointments.userId, userId),
+      eq(appointments.clinicId, clinicId)
+    ];
+
+    if (search) {
+      const sp = `%${search}%`;
+      filters.push(or(
+        ilike(appointments.status, sp),
+        exists(
+          db.select().from(services).where(and(
+            eq(services.id, appointments.serviceId),
+            ilike(services.name, sp)
+          ))
+        )
+      )!);
+    }
+
+    const whereClause = and(...filters);
+
+    const [totalResult] = await db.select({ value: count() })
+      .from(appointments)
+      .where(whereClause);
+    
+    const total = totalResult.value;
+
     const results = await db.query.appointments.findMany({
-      where: and(eq(appointments.userId, userId), eq(appointments.clinicId, clinicId)),
+      where: whereClause,
+      limit,
+      offset,
       with: {
         service: true,
       }
     });
-    return results.map(this.mapToEntity);
+
+    return {
+      data: results.map(this.mapToEntity),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   async findById(id: string, clinicId: string): Promise<Appointment | null> {

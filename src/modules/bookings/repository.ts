@@ -1,11 +1,12 @@
+import { PaginatedResult } from '@/lib/types';
 import { Appointment, CreateBookingInput, BusinessHours, BlockedSlot } from './types';
 import { addMinutes, format } from 'date-fns';
 import { timeFromMinutes, getMinutesFromTime } from '@/lib/date';
 import { APPOINTMENT_STATUS } from '@/lib/constants';
 
 export interface IBookingRepository {
-  findAll(clinicId: string): Promise<Appointment[]>;
-  findByUserId(userId: string, clinicId: string): Promise<Appointment[]>;
+  findAll(clinicId: string, page?: number, limit?: number, search?: string): Promise<PaginatedResult<Appointment>>;
+  findByUserId(userId: string, clinicId: string, page?: number, limit?: number, search?: string): Promise<PaginatedResult<Appointment>>;
   findById(id: string, clinicId: string): Promise<Appointment | null>;
   create(data: CreateBookingInput, endTime: string): Promise<Appointment>;
   updateStatus(id: string, clinicId: string, status: Appointment['status']): Promise<Appointment>;
@@ -54,11 +55,53 @@ const MOCK_BLOCKED_SLOTS: BlockedSlot[] = [
 ];
 
 export class MockBookingRepository implements IBookingRepository {
-  async findAll(clinicId: string): Promise<Appointment[]> {
-    return MOCK_APPOINTMENTS.filter(a => a.clinicId === clinicId);
+  async findAll(clinicId: string, page = 1, limit = 10, search?: string): Promise<PaginatedResult<Appointment>> {
+    let all = MOCK_APPOINTMENTS.filter(a => a.clinicId === clinicId);
+    
+    if (search) {
+      const q = search.toLowerCase();
+      all = all.filter(a => {
+        return (
+          a.user?.name.toLowerCase().includes(q) ||
+          a.user?.email.toLowerCase().includes(q) ||
+          a.service?.name.toLowerCase().includes(q) ||
+          a.status.toLowerCase().includes(q)
+        );
+      });
+    }
+
+    const start = (page - 1) * limit;
+    const data = all.slice(start, start + limit);
+    return {
+      data,
+      total: all.length,
+      page,
+      limit,
+      totalPages: Math.ceil(all.length / limit),
+    };
   }
-  async findByUserId(userId: string, clinicId: string): Promise<Appointment[]> {
-    return MOCK_APPOINTMENTS.filter((a) => a.userId === userId && a.clinicId === clinicId);
+  async findByUserId(userId: string, clinicId: string, page = 1, limit = 10, search?: string): Promise<PaginatedResult<Appointment>> {
+    let all = MOCK_APPOINTMENTS.filter((a) => a.userId === userId && a.clinicId === clinicId);
+    
+    if (search) {
+      const q = search.toLowerCase();
+      all = all.filter(a => {
+        return (
+          a.service?.name.toLowerCase().includes(q) ||
+          a.status.toLowerCase().includes(q)
+        );
+      });
+    }
+
+    const start = (page - 1) * limit;
+    const data = all.slice(start, start + limit);
+    return {
+      data,
+      total: all.length,
+      page,
+      limit,
+      totalPages: Math.ceil(all.length / limit),
+    };
   }
   async findById(id: string, clinicId: string): Promise<Appointment | null> {
     return MOCK_APPOINTMENTS.find((a) => a.id === id && a.clinicId === clinicId) || null;

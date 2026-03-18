@@ -22,8 +22,22 @@ export async function GET(req: NextRequest) {
     return apiResponse.error('clinicId or clinicSlug is required', 400);
   }
 
-  const services = await serviceService.getAllServices(clinicId);
-  return apiResponse.success(services);
+  try {
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
+    const search = searchParams.get('search') || undefined;
+
+    const result = await serviceService.getAllServices(clinicId, page, limit, search);
+    return apiResponse.success(result.data, undefined, 200, {
+      total: result.total,
+      page: result.page,
+      limit: result.limit,
+      totalPages: result.totalPages,
+    });
+  } catch (error: any) {
+    console.error('Fetch services error:', error);
+    return apiResponse.error('เกิดข้อผิดพลาดในการดึงข้อมูล');
+  }
 }
 
 export async function POST(req: NextRequest) {

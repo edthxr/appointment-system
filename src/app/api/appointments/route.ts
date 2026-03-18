@@ -21,11 +21,30 @@ export async function GET(req: NextRequest) {
     return apiResponse.error('Clinic not found', 404);
   }
 
-  if (session.role === 'admin' || session.role === 'super_admin') {
-    const all = await bookingRepo.findAll(clinic.id);
-    return apiResponse.success(all);
-  } else {
-    const mine = await bookingRepo.findByUserId(session.id, clinic.id);
-    return apiResponse.success(mine);
+  try {
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
+    const search = searchParams.get('search') || undefined;
+
+    if (session.role === 'admin' || session.role === 'super_admin') {
+      const result = await bookingRepo.findAll(clinic.id, page, limit, search);
+      return apiResponse.success(result.data, undefined, 200, {
+        total: result.total,
+        page: result.page,
+        limit: result.limit,
+        totalPages: result.totalPages,
+      });
+    } else {
+      const result = await bookingRepo.findByUserId(session.id, clinic.id, page, limit, search);
+      return apiResponse.success(result.data, undefined, 200, {
+        total: result.total,
+        page: result.page,
+        limit: result.limit,
+        totalPages: result.totalPages,
+      });
+    }
+  } catch (error: any) {
+    console.error('Fetch appointments error:', error);
+    return apiResponse.error('เกิดข้อผิดพลาดในการดึงข้อมูล');
   }
 }
