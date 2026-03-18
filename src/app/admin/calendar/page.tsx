@@ -1,20 +1,9 @@
 import { redirect } from 'next/navigation';
 import { resolveActiveClinic, getUserClinics } from '@/lib/clinic-resolver';
 import { getSession } from '@/lib/session';
+import AdminCalendarView from '@/modules/calendar/components/AdminCalendarView';
 
-/**
- * Admin Calendar Redirect Page
- * 
- * Thin redirect layer - no calendar logic duplication.
- * Resolves user's active clinic and redirects to clinic-specific calendar.
- * 
- * Clinic Resolution Priority:
- * 1. User's primary clinic (owner/admin > staff > customer)
- * 2. Super admin -> first active clinic
- * 3. Multiple clinics -> /admin/select-clinic
- * 4. No clinics -> error page
- */
-export default async function AdminCalendarRedirectPage() {
+export default async function AdminCalendarPage() {
   const session = await getSession();
 
   // Not logged in
@@ -30,14 +19,17 @@ export default async function AdminCalendarRedirectPage() {
     const userClinics = await getUserClinics();
     
     if (userClinics.length === 0) {
-      // User has no clinic access
       redirect('/admin/dashboard?error=no_clinic_access');
     }
     
-    // Multiple clinics - let user choose
     redirect('/admin/select-clinic');
   }
 
-  // Single clinic resolved - redirect to clinic calendar
-  redirect(`/c/${activeClinic.slug}/admin/calendar`);
+  // Render the calendar directly at /admin/calendar
+  return (
+    <AdminCalendarView 
+      clinicSlug={activeClinic.slug} 
+      clinicName={activeClinic.name} 
+    />
+  );
 }

@@ -17,13 +17,46 @@ interface CalendarEvent {
   }>;
 }
 
-export default function AdminCalendar() {
+interface AdminCalendarViewProps {
+  clinicSlug: string;
+  clinicName: string;
+}
+
+export default function AdminCalendarView({ clinicSlug, clinicName }: AdminCalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [showPicker, setShowPicker] = useState<'month' | 'year' | null>(null);
   const [yearRangeStart, setYearRangeStart] = useState(new Date().getFullYear() - 5);
+
+  const monthStart = startOfMonth(currentDate);
+  const monthEnd = endOfMonth(currentDate);
+  const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
+
+  useEffect(() => {
+    fetchCalendarData();
+  }, [currentDate]);
+
+  const fetchCalendarData = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/calendar?date=${format(currentDate, 'yyyy-MM-dd')}&view=month&clinicSlug=${clinicSlug}`);
+      const data = await response.json();
+      if (data.success) {
+        setEvents(data.data.appointments);
+      }
+    } catch (error) {
+      console.error('Failed to fetch calendar data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getEventsForDate = (date: Date) => {
+    const dateStr = format(date, 'yyyy-MM-dd');
+    return events.find(event => event.date === dateStr);
+  };
 
   const months = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
   
@@ -41,41 +74,13 @@ export default function AdminCalendar() {
     setShowPicker(null);
   };
 
-  const monthStart = startOfMonth(currentDate);
-  const monthEnd = endOfMonth(currentDate);
-  const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
-
-  useEffect(() => {
-    fetchCalendarData();
-  }, [currentDate]);
-
-  const fetchCalendarData = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch(`/api/calendar?date=${format(currentDate, 'yyyy-MM-dd')}&view=month&clinicSlug=aura-premium`);
-      const data = await response.json();
-      if (data.success) {
-        setEvents(data.data.appointments);
-      }
-    } catch (error) {
-      console.error('Failed to fetch calendar data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getEventsForDate = (date: Date) => {
-    const dateStr = format(date, 'yyyy-MM-dd');
-    return events.find(event => event.date === dateStr);
-  };
-
   return (
     <div className="animate-in fade-in duration-700 min-h-screen pb-20">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
         <div>
           <h1 className="text-4xl font-display font-black text-foreground tracking-tighter mb-2">ปฏิทินนัดหมาย</h1>
-          <p className="text-[13px] font-bold text-foreground-muted uppercase tracking-[0.2em]">Management & Scheduling</p>
+          <p className="text-[13px] font-bold text-foreground-muted uppercase tracking-[0.2em]">{clinicName} • Scheduling</p>
         </div>
         
         <div className="flex items-center bg-muted/50 p-1.5 rounded-full border border-border-ios backdrop-blur-sm shadow-sm self-start md:self-auto">
@@ -138,7 +143,7 @@ export default function AdminCalendar() {
               <div className="grid grid-cols-3 md:grid-cols-4 gap-4">
                 {months.map((m, idx) => (
                   <button
-                    key={m}
+                    key={idx}
                     onClick={() => handleMonthChange(idx)}
                     className={`py-6 rounded-2xl font-black text-[13px] uppercase tracking-widest transition-all ${
                       currentDate.getMonth() === idx 
@@ -162,13 +167,13 @@ export default function AdminCalendar() {
           {showPicker === 'year' && (
             <div className="absolute inset-x-0 top-[90px] bottom-0 bg-white z-40 p-8 animate-in slide-in-from-top duration-500 overflow-y-auto">
               <div className="flex items-center justify-between mb-8">
-                <button onClick={() => setYearRangeStart(yearRangeStart - 12)} className="p-2 text-foreground-muted hover:text-accent">
+                <button onClick={() => setYearRangeStart(yearRangeStart - 12)} className="p-2 text-foreground-muted hover:text-accent transition-colors">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" /></svg>
                 </button>
                 <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-foreground-muted">
                   ปี พ.ศ. {yearRangeStart + 543} - {yearRangeStart + 11 + 543}
                 </h3>
-                <button onClick={() => setYearRangeStart(yearRangeStart + 12)} className="p-2 text-foreground-muted hover:text-accent">
+                <button onClick={() => setYearRangeStart(yearRangeStart + 12)} className="p-2 text-foreground-muted hover:text-accent transition-colors">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
                 </button>
               </div>
@@ -272,7 +277,7 @@ export default function AdminCalendar() {
                 </div>
                 <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-md">
                    <svg className="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2-2v12a2 2 0 002 2z" />
                    </svg>
                 </div>
              </div>
@@ -330,4 +335,3 @@ export default function AdminCalendar() {
     </div>
   );
 }
-
