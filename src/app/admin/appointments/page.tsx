@@ -152,7 +152,7 @@ export default function AdminAppointmentsPage() {
       <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
         <div>
           <h1 className="text-4xl font-display font-black text-foreground tracking-tighter mb-2" id="appointments-title">Appointments</h1>
-          <p className="text-[13px] font-bold text-foreground-muted uppercase tracking-widest">Client Service Masterlist</p>
+          <p className="text-[13px] font-black text-accent uppercase tracking-[0.3em]">Client Service Masterlist</p>
         </div>
         <div className="text-[11px] font-black text-foreground-muted italic bg-muted px-4 py-2 rounded-full border border-border-ios">
           Showing {appointments.length} of {total} scheduled visits

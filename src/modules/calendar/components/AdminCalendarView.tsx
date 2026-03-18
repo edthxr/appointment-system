@@ -79,8 +79,8 @@ export default function AdminCalendarView({ clinicSlug, clinicName }: AdminCalen
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
         <div>
-          <h1 className="text-4xl font-display font-black text-foreground tracking-tighter mb-2">ปฏิทินนัดหมาย</h1>
-          <p className="text-[13px] font-bold text-foreground-muted uppercase tracking-[0.2em]">{clinicName} • Scheduling</p>
+          <h1 className="text-4xl font-display font-black text-foreground tracking-tighter mb-2">Appointments Calendar</h1>
+          <p className="text-[13px] font-black text-accent uppercase tracking-[0.3em]">{clinicName} • Scheduling</p>
         </div>
         
         <div className="flex items-center bg-muted/50 p-1.5 rounded-full border border-border-ios backdrop-blur-sm shadow-sm self-start md:self-auto">

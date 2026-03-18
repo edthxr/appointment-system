@@ -40,7 +40,7 @@ export function Navbar({
     { href: '/admin/profile', label: 'โปรไฟล์' },
   ];
 
-  const isAdminRole = role === 'admin' || role === 'super_admin' || role === 'clinic_admin' || role === 'clinic_staff';
+  const isAdminRole = role === 'admin' || role === 'super_admin' || role === 'clinic_owner' || role === 'clinic_admin' || role === 'clinic_staff';
   const isUserRole = role === 'user' || role === 'customer';
 
   // Filter admin links for clinic staff - they can see appointments but not manage services or settings
@@ -58,7 +58,7 @@ export function Navbar({
       <div className="max-w-7xl mx-auto px-6 lg:px-12">
         <div className="flex justify-between h-20">
           <div className="flex items-center gap-12">
-            <Link href={clinicSlug ? `/c/${clinicSlug}` : "/"} className="shrink-0 flex items-center group">
+            <Link href={isAdminRole ? '/admin/dashboard' : clinicSlug ? `/c/${clinicSlug}` : "/"} className="shrink-0 flex items-center group">
               <span className="text-2xl font-display font-black tracking-tighter text-foreground group-hover:text-accent transition-colors">
                 {clinicLabel.split(' ')[0]} <span className="font-light text-foreground-muted">{clinicLabel.split(' ').slice(1).join(' ')}</span>
               </span>

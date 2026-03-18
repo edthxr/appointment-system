@@ -26,8 +26,8 @@ export default function LoginPage() {
       
       if (data.success) {
         const user = data.data;
-        if (user.role === 'super_admin' || user.role === 'clinic_admin' || user.role === 'admin') {
-          router.push('/admin'); // Or wherever the dashboard is
+        if (['admin', 'super_admin', 'clinic_owner', 'clinic_admin', 'clinic_staff'].includes(user.role)) {
+          router.push('/admin/dashboard');
         } else {
           router.push('/c/aura-premium'); 
         }
