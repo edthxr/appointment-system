@@ -7,9 +7,11 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     // Simple fetch to show some data on dashboard
+    // Hardcoding aura-premium for now to match the default clinic after refactor
+    const clinicSlug = 'aura-premium';
     Promise.all([
-      fetch('/api/appointments').then(res => res.json()),
-      fetch('/api/services').then(res => res.json())
+      fetch(`/api/appointments?clinicSlug=${clinicSlug}`).then(res => res.json()),
+      fetch(`/api/services?clinicSlug=${clinicSlug}`).then(res => res.json())
     ]).then(([appointments, services]) => {
       setStats({
         appointments: appointments.data?.length || 0,

@@ -7,8 +7,10 @@ export default function AdminAppointmentsPage() {
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const clinicSlug = 'aura-premium';
+
   useEffect(() => {
-    fetch('/api/appointments')
+    fetch(`/api/appointments?clinicSlug=${clinicSlug}`)
       .then(res => res.json())
       .then(res => { if (res.success) setAppointments(res.data); })
       .finally(() => setLoading(false));
@@ -16,7 +18,7 @@ export default function AdminAppointmentsPage() {
 
   const handleUpdateStatus = async (id: string, status: string) => {
     try {
-      const res = await fetch(`/api/bookings/${id}`, {
+      const res = await fetch(`/api/bookings/${id}?clinicSlug=${clinicSlug}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status }),

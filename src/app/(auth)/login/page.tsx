@@ -25,9 +25,13 @@ export default function LoginPage() {
       const data = await res.json();
       
       if (data.success) {
-        if (data.data.role === 'admin') router.push('/admin/dashboard');
-        else router.push('/booking');
-        router.refresh(); // Update session state in Navbar
+        const user = data.data;
+        if (user.role === 'super_admin' || user.role === 'clinic_admin' || user.role === 'admin') {
+          router.push('/admin'); // Or wherever the dashboard is
+        } else {
+          router.push('/c/aura-premium'); 
+        }
+        router.refresh(); 
       } else {
         setError(data.error || 'ล็อกอินไม่สำเร็จ');
       }

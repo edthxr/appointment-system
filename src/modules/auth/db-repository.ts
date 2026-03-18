@@ -8,6 +8,13 @@ import { ROLES } from '@/lib/constants';
 export class DbUserRepository implements IUserRepository {
   async findByEmail(email: string): Promise<User | null> {
     const result = await db!.select().from(users).where(eq(users.email, email)).limit(1);
+    if (!result[0]) return null;
+    const { passwordHash, ...user } = result[0];
+    return { ...user, role: user.role as any };
+  }
+
+  async findWithPasswordByEmail(email: string): Promise<(User & { passwordHash: string }) | null> {
+    const result = await db!.select().from(users).where(eq(users.email, email)).limit(1);
     return result[0] ? { ...result[0], role: result[0].role as any } : null;
   }
 

@@ -2,19 +2,24 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 
 export default function ServicesPage() {
+  const params = useParams();
+  const clinicSlug = params?.clinicSlug as string;
   const [services, setServices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/services')
+    if (!clinicSlug) return;
+    
+    fetch(`/api/services?clinicSlug=${clinicSlug}`)
       .then((res) => res.json())
       .then((res) => {
         if (res.success) setServices(res.data);
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [clinicSlug]);
 
   if (loading) return <div className="text-center py-10 text-gray-500">กำลังโหลด...</div>;
 

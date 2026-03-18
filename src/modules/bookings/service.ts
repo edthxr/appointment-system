@@ -10,20 +10,20 @@ export class BookingService {
     private serviceRepo: IServiceRepository
   ) {}
 
-  async getAvailableSlots(date: Date, serviceId: string) {
-    const service = await this.serviceRepo.findById(serviceId);
+  async getAvailableSlots(date: Date, serviceId: string, clinicId: string) {
+    const service = await this.serviceRepo.findById(serviceId, clinicId);
     if (!service) throw new Error('Service not found');
 
     const dayOfWeek = date.getDay();
-    const businessHoursList = await this.bookingRepo.getBusinessHours();
+    const businessHoursList = await this.bookingRepo.getBusinessHours(clinicId);
     const schedule = businessHoursList.find((bh) => bh.dayOfWeek === dayOfWeek);
 
     if (!schedule || !schedule.isOpen) return [];
 
     const startMinutes = getMinutesFromTime(schedule.startTime);
     const endMinutes = getMinutesFromTime(schedule.endTime);
-    const appointments = await this.bookingRepo.getAppointmentsByDate(date);
-    const blockedSlots = await this.bookingRepo.getBlockedSlots(date);
+    const appointments = await this.bookingRepo.getAppointmentsByDate(date, clinicId);
+    const blockedSlots = await this.bookingRepo.getBlockedSlots(date, clinicId);
 
     const slots: string[] = [];
     const step = 30; // 30-minute intervals for slot start times
@@ -58,7 +58,7 @@ export class BookingService {
   }
 
   async createBooking(data: CreateBookingInput) {
-    const service = await this.serviceRepo.findById(data.serviceId);
+    const service = await this.serviceRepo.findById(data.serviceId, data.clinicId);
     if (!service) throw new Error('Service not found');
 
     const startMin = getMinutesFromTime(data.startTime);
@@ -68,13 +68,13 @@ export class BookingService {
     return this.bookingRepo.create(data, endTime);
   }
 
-  async updateStatus(id: string, status: Appointment['status'], userId: string, isAdmin: boolean) {
-    const appointment = await this.bookingRepo.findById(id);
+  async updateStatus(id: string, clinicId: string, status: Appointment['status'], userId: string, isAdmin: boolean) {
+    const appointment = await this.bookingRepo.findById(id, clinicId);
     if (!appointment) throw new Error('ไม่พบข้อมูลการนัดหมาย');
 
     // Admin can update any status
     if (isAdmin) {
-      return this.bookingRepo.updateStatus(id, status);
+      return this.bookingRepo.updateStatus(id, clinicId, status);
     }
 
     // User can only cancel their own booking
@@ -91,6 +91,6 @@ export class BookingService {
       throw new Error('ไม่สามารถยกเลิกนัดหมายที่ดำเนินการเสร็จสิ้นหรือถูกยกเลิกไปแล้วได้');
     }
 
-    return this.bookingRepo.updateStatus(id, 'cancelled');
+    return this.bookingRepo.updateStatus(id, clinicId, 'cancelled');
   }
 }

@@ -1,17 +1,18 @@
 import { Service, CreateServiceInput, UpdateServiceInput } from './types';
 
 export interface IServiceRepository {
-  findAll(): Promise<Service[]>;
-  findById(id: string): Promise<Service | null>;
+  findAll(clinicId: string): Promise<Service[]>;
+  findById(id: string, clinicId: string): Promise<Service | null>;
   create(data: CreateServiceInput): Promise<Service>;
-  update(id: string, data: UpdateServiceInput): Promise<Service>;
-  delete(id: string): Promise<void>;
+  update(id: string, clinicId: string, data: UpdateServiceInput): Promise<Service>;
+  delete(id: string, clinicId: string): Promise<void>;
 }
 
 // Mock Implementation
 const MOCK_SERVICES: Service[] = [
   {
     id: 's1',
+    clinicId: 'default-clinic-id',
     name: 'ฉีดวิตามินผิว (Skin Vitamin)',
     description: 'เติมวิตามินเข้มข้นเพื่อผิวกระจ่างใสและสุขภาพดี',
     durationMin: 30,
@@ -22,6 +23,7 @@ const MOCK_SERVICES: Service[] = [
   },
   {
     id: 's2',
+    clinicId: 'default-clinic-id',
     name: 'เลเซอร์หน้าใส (Aura Laser)',
     description: 'ลดรอยดำ รอยแดง และปรับสีผิวให้สม่ำเสมอด้วยเลเซอร์มาตรฐานสูง',
     durationMin: 45,
@@ -30,44 +32,14 @@ const MOCK_SERVICES: Service[] = [
     createdAt: new Date(),
     updatedAt: new Date(),
   },
-  {
-    id: 's3',
-    name: 'กดสิว + ทรีตเมนต์ (Acne Clear)',
-    description: 'ดูแลปัญหาสิวอย่างครบวงจร พร้อมทรีตเมนต์ปลอบประโลมผิว',
-    durationMin: 60,
-    price: 990,
-    isActive: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: 's4',
-    name: 'HIFU ยกกระชับ (HIFU Ultra)',
-    description: 'ยกกระชับใบหน้าและลำคอโดยไม่ต้องผ่าตัด เห็นผลทันทีหลังทำ',
-    durationMin: 90,
-    price: 8900,
-    isActive: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: 's5',
-    name: 'Botox Consultation',
-    description: 'ปรึกษาแพทย์ผู้เชี่ยวชาญเพื่อปรับรูปหน้าและลดริ้วรอย',
-    durationMin: 30,
-    price: 0,
-    isActive: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
 ];
 
 export class MockServiceRepository implements IServiceRepository {
-  async findAll(): Promise<Service[]> {
-    return MOCK_SERVICES;
+  async findAll(clinicId: string): Promise<Service[]> {
+    return MOCK_SERVICES.filter(s => s.clinicId === clinicId);
   }
-  async findById(id: string): Promise<Service | null> {
-    return MOCK_SERVICES.find((s) => s.id === id) || null;
+  async findById(id: string, clinicId: string): Promise<Service | null> {
+    return MOCK_SERVICES.find((s) => s.id === id && s.clinicId === clinicId) || null;
   }
   async create(data: CreateServiceInput): Promise<Service> {
     const newService: Service = {
@@ -81,14 +53,14 @@ export class MockServiceRepository implements IServiceRepository {
     MOCK_SERVICES.push(newService);
     return newService;
   }
-  async update(id: string, data: UpdateServiceInput): Promise<Service> {
-    const index = MOCK_SERVICES.findIndex((s) => s.id === id);
+  async update(id: string, clinicId: string, data: UpdateServiceInput): Promise<Service> {
+    const index = MOCK_SERVICES.findIndex((s) => s.id === id && s.clinicId === clinicId);
     if (index === -1) throw new Error('Service not found');
     MOCK_SERVICES[index] = { ...MOCK_SERVICES[index], ...data, updatedAt: new Date() };
     return MOCK_SERVICES[index];
   }
-  async delete(id: string): Promise<void> {
-    const index = MOCK_SERVICES.findIndex((s) => s.id === id);
+  async delete(id: string, clinicId: string): Promise<void> {
+    const index = MOCK_SERVICES.findIndex((s) => s.id === id && s.clinicId === clinicId);
     if (index !== -1) MOCK_SERVICES.splice(index, 1);
   }
 }

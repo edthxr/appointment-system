@@ -3,6 +3,7 @@ import { ROLES } from '@/lib/constants';
 
 export interface IUserRepository {
   findByEmail(email: string): Promise<User | null>;
+  findWithPasswordByEmail(email: string): Promise<(User & { passwordHash: string }) | null>;
   findById(id: string): Promise<User | null>;
   create(data: RegisterInput & { passwordHash: string }): Promise<User>;
 }
@@ -29,6 +30,11 @@ const MOCK_USERS: User[] = [
 export class MockUserRepository implements IUserRepository {
   async findByEmail(email: string): Promise<User | null> {
     return MOCK_USERS.find((u) => u.email === email) || null;
+  }
+  async findWithPasswordByEmail(email: string): Promise<(User & { passwordHash: string }) | null> {
+    const user = MOCK_USERS.find((u) => u.email === email);
+    if (!user) return null;
+    return { ...user, passwordHash: '$2a$10$dummyhash' }; // Mock hash
   }
   async findById(id: string): Promise<User | null> {
     return MOCK_USERS.find((u) => u.id === id) || null;

@@ -4,10 +4,25 @@ import { registry } from '@/lib/registry';
 import { ServiceService } from '@/modules/services/service';
 import { getSession } from '@/lib/session';
 
+import { getClinicBySlug } from '@/lib/tenant';
+
 const serviceService = new ServiceService(registry.serviceRepo);
 
-export async function GET() {
-  const services = await serviceService.getAllServices();
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  let clinicId = searchParams.get('clinicId');
+  const clinicSlug = searchParams.get('clinicSlug');
+
+  if (!clinicId && clinicSlug) {
+    const clinic = await getClinicBySlug(clinicSlug);
+    clinicId = clinic?.id || null;
+  }
+
+  if (!clinicId) {
+    return apiResponse.error('clinicId or clinicSlug is required', 400);
+  }
+
+  const services = await serviceService.getAllServices(clinicId);
   return apiResponse.success(services);
 }
 

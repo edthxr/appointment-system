@@ -6,8 +6,10 @@ export default function AdminServicesPage() {
   const [services, setServices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const clinicSlug = 'aura-premium';
+
   useEffect(() => {
-    fetch('/api/services')
+    fetch(`/api/services?clinicSlug=${clinicSlug}`)
       .then(res => res.json())
       .then(res => { if (res.success) setServices(res.data); })
       .finally(() => setLoading(false));
@@ -19,7 +21,7 @@ export default function AdminServicesPage() {
 
   const fetchServices = () => {
     setLoading(true);
-    fetch('/api/services')
+    fetch(`/api/services?clinicSlug=${clinicSlug}`)
       .then(res => res.json())
       .then(res => { if (res.success) setServices(res.data); })
       .finally(() => setLoading(false));
@@ -44,14 +46,14 @@ export default function AdminServicesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const url = editingService ? `/api/services/${editingService.id}` : '/api/services';
+    const url = editingService ? `/api/services/${editingService.id}?clinicSlug=${clinicSlug}` : `/api/services`;
     const method = editingService ? 'PATCH' : 'POST';
 
     try {
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ ...formData, clinicSlug }),
       });
       const data = await res.json();
       if (data.success) {
@@ -68,7 +70,7 @@ export default function AdminServicesPage() {
   const handleDelete = async (id: string) => {
     if (!confirm('คุณต้องการลบบริการนี้ใช่หรือไม่?')) return;
     try {
-      const res = await fetch(`/api/services/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/services/${id}?clinicSlug=${clinicSlug}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.success) fetchServices();
       else alert(data.error || 'ลบไม่สำเร็จ');

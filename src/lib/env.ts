@@ -1,8 +1,11 @@
 import { z } from 'zod';
+import * as dotenv from 'dotenv';
+
+dotenv.config({ path: '.env.local' });
 
 const envSchema = z.object({
   DATABASE_URL: z.string().url().optional(),
-  USE_MOCK_DB: z.enum(['true', 'false']).default('true'),
+  USE_MOCK_DB: z.enum(['true', 'false']).default('false'),
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
 });
 

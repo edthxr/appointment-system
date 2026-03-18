@@ -6,11 +6,11 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  await checkRole(['admin']);
+  const session = await checkRole(['admin', 'super_admin', 'clinic_admin']);
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar role="admin" />
+      <Navbar user={session} />
       <div className="flex">
         <main className="flex-1 max-w-7xl mx-auto py-12 px-6 lg:px-12 font-sans">
           {children}

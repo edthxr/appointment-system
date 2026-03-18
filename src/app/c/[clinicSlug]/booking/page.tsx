@@ -1,11 +1,13 @@
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams, useRouter, useParams } from 'next/navigation';
 import { format, addDays } from 'date-fns';
 
 function BookingContent() {
   const searchParams = useSearchParams();
+  const params = useParams();
+  const clinicSlug = params?.clinicSlug as string;
   const router = useRouter();
   const initialServiceId = searchParams.get('serviceId') || '';
 
@@ -19,17 +21,18 @@ function BookingContent() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    fetch('/api/services')
+    if (!clinicSlug) return;
+    fetch(`/api/services?clinicSlug=${clinicSlug}`)
       .then((res) => res.json())
       .then((res) => {
         if (res.success) setServices(res.data);
       });
-  }, []);
+  }, [clinicSlug]);
 
   useEffect(() => {
-    if (selectedService && selectedDate) {
+    if (selectedService && selectedDate && clinicSlug) {
       setLoading(true);
-      fetch(`/api/bookings?serviceId=${selectedService}&date=${selectedDate}`)
+      fetch(`/api/bookings?serviceId=${selectedService}&date=${selectedDate}&clinicSlug=${clinicSlug}`)
         .then((res) => res.json())
         .then((res) => {
           if (res.success) setSlots(res.data);
@@ -37,11 +40,11 @@ function BookingContent() {
         })
         .finally(() => setLoading(false));
     }
-  }, [selectedService, selectedDate]);
+  }, [selectedService, selectedDate, clinicSlug]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedService || !selectedDate || !selectedSlot) return;
+    if (!selectedService || !selectedDate || !selectedSlot || !clinicSlug) return;
 
     setSubmitting(true);
     try {
@@ -49,6 +52,7 @@ function BookingContent() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          clinicSlug, // Passing slug to let API resolve clinicId
           serviceId: selectedService,
           appointmentDate: selectedDate,
           startTime: selectedSlot,
@@ -57,7 +61,7 @@ function BookingContent() {
       });
       const data = await res.json();
       if (data.success) {
-        router.push('/my-bookings');
+        router.push(`/c/${clinicSlug}/my-bookings`);
       } else {
         alert(data.error || 'Reservation failed. Please try again.');
       }

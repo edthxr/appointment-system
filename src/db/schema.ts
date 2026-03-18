@@ -1,5 +1,18 @@
-import { pgTable, text, timestamp, boolean, integer, decimal, uuid, primaryKey } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, boolean, integer, decimal, uuid } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
+
+// --- Global Tables ---
+
+export const clinics = pgTable('clinics', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: text('name').notNull(),
+  slug: text('slug').unique().notNull(),
+  logoUrl: text('logo_url'),
+  themeConfig: text('theme_config'), // JSON string for custom colors etc.
+  isActive: boolean('is_active').default(true).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
 
 export const users = pgTable('users', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -7,13 +20,26 @@ export const users = pgTable('users', {
   email: text('email').unique().notNull(),
   phone: text('phone'),
   passwordHash: text('password_hash').notNull(),
-  role: text('role', { enum: ['admin', 'user'] }).default('user').notNull(),
+  role: text('role', { enum: ['super_admin', 'user'] }).default('user').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
+// Junction table for users and clinics (rbac)
+export const clinicUsers = pgTable('clinic_users', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  clinicId: uuid('clinic_id').references(() => clinics.id).notNull(),
+  userId: uuid('user_id').references(() => users.id).notNull(),
+  role: text('role', { enum: ['clinic_admin', 'staff', 'customer'] }).default('customer').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// --- Tenant-specific Tables ---
+
 export const services = pgTable('services', {
   id: uuid('id').defaultRandom().primaryKey(),
+  clinicId: uuid('clinic_id').references(() => clinics.id).notNull(),
   name: text('name').notNull(),
   description: text('description'),
   durationMin: integer('duration_min').notNull(),
@@ -25,6 +51,7 @@ export const services = pgTable('services', {
 
 export const appointments = pgTable('appointments', {
   id: uuid('id').defaultRandom().primaryKey(),
+  clinicId: uuid('clinic_id').references(() => clinics.id).notNull(),
   userId: uuid('user_id').references(() => users.id).notNull(),
   serviceId: uuid('service_id').references(() => services.id).notNull(),
   appointmentDate: timestamp('appointment_date').notNull(),
@@ -38,6 +65,7 @@ export const appointments = pgTable('appointments', {
 
 export const notifications = pgTable('notifications', {
   id: uuid('id').defaultRandom().primaryKey(),
+  clinicId: uuid('clinic_id').references(() => clinics.id).notNull(),
   userId: uuid('user_id').references(() => users.id).notNull(),
   appointmentId: uuid('appointment_id').references(() => appointments.id),
   channel: text('channel', { enum: ['email', 'line'] }).notNull(),
@@ -50,6 +78,7 @@ export const notifications = pgTable('notifications', {
 
 export const businessHours = pgTable('business_hours', {
   id: uuid('id').defaultRandom().primaryKey(),
+  clinicId: uuid('clinic_id').references(() => clinics.id).notNull(),
   dayOfWeek: integer('day_of_week').notNull(), // 0-6 (Sun-Sat)
   startTime: text('start_time').notNull(), // HH:mm
   endTime: text('end_time').notNull(),   // HH:mm
@@ -60,6 +89,7 @@ export const businessHours = pgTable('business_hours', {
 
 export const blockedSlots = pgTable('blocked_slots', {
   id: uuid('id').defaultRandom().primaryKey(),
+  clinicId: uuid('clinic_id').references(() => clinics.id).notNull(),
   blockedDate: timestamp('blocked_date').notNull(),
   startTime: text('start_time'), // HH:mm (null if whole day)
   endTime: text('end_time'),     // HH:mm
@@ -68,22 +98,48 @@ export const blockedSlots = pgTable('blocked_slots', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
-// Relations
+// --- Relations ---
+
+export const clinicsRelations = relations(clinics, ({ many }) => ({
+  clinicUsers: many(clinicUsers),
+  services: many(services),
+  appointments: many(appointments),
+  businessHours: many(businessHours),
+  blockedSlots: many(blockedSlots),
+}));
+
 export const usersRelations = relations(users, ({ many }) => ({
   appointments: many(appointments),
   notifications: many(notifications),
+  clinicUsers: many(clinicUsers),
 }));
 
-export const servicesRelations = relations(services, ({ many }) => ({
+export const clinicUsersRelations = relations(clinicUsers, ({ one }) => ({
+  clinic: one(clinics, { fields: [clinicUsers.clinicId], references: [clinics.id] }),
+  user: one(users, { fields: [clinicUsers.userId], references: [users.id] }),
+}));
+
+export const servicesRelations = relations(services, ({ one, many }) => ({
+  clinic: one(clinics, { fields: [services.clinicId], references: [clinics.id] }),
   appointments: many(appointments),
 }));
 
 export const appointmentsRelations = relations(appointments, ({ one }) => ({
+  clinic: one(clinics, { fields: [appointments.clinicId], references: [clinics.id] }),
   user: one(users, { fields: [appointments.userId], references: [users.id] }),
   service: one(services, { fields: [appointments.serviceId], references: [services.id] }),
 }));
 
 export const notificationsRelations = relations(notifications, ({ one }) => ({
+  clinic: one(clinics, { fields: [notifications.clinicId], references: [clinics.id] }),
   user: one(users, { fields: [notifications.userId], references: [users.id] }),
   appointment: one(appointments, { fields: [notifications.appointmentId], references: [appointments.id] }),
+}));
+
+export const businessHoursRelations = relations(businessHours, ({ one }) => ({
+  clinic: one(clinics, { fields: [businessHours.clinicId], references: [clinics.id] }),
+}));
+
+export const blockedSlotsRelations = relations(blockedSlots, ({ one }) => ({
+  clinic: one(clinics, { fields: [blockedSlots.clinicId], references: [clinics.id] }),
 }));

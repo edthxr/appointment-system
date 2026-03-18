@@ -4,18 +4,30 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils'; // I'll create this helper in src/lib/utils.ts
 
-export function Navbar({ role }: { role?: 'admin' | 'user' | null }) {
+import { Role } from '@/lib/constants';
+
+export function Navbar({ 
+  user,
+  clinic 
+}: { 
+  user?: { name: string; role: Role } | null;
+  clinic?: { name: string; slug: string };
+}) {
   const pathname = usePathname();
+  const role = user?.role;
+
+  const clinicLabel = clinic?.name || 'Aura Clinic';
+  const clinicSlug = clinic?.slug;
 
   const publicLinks = [
-    { href: '/', label: 'หน้าแรก' },
-    { href: '/services', label: 'บริการของเรา' },
-    { href: '/booking', label: 'จองคิว' },
+    { href: clinicSlug ? `/c/${clinicSlug}` : '/', label: 'หน้าแรก' },
+    { href: clinicSlug ? `/c/${clinicSlug}/services` : '/services', label: 'บริการของเรา' },
+    { href: clinicSlug ? `/c/${clinicSlug}/booking` : '/booking', label: 'จองคิว' },
   ];
 
   const userLinks = [
     ...publicLinks,
-    { href: '/my-bookings', label: 'รายการจองของฉัน' },
+    { href: clinicSlug ? `/c/${clinicSlug}/my-bookings` : '/my-bookings', label: 'รายการจองของฉัน' },
   ];
 
   const adminLinks = [
@@ -26,16 +38,19 @@ export function Navbar({ role }: { role?: 'admin' | 'user' | null }) {
     { href: '/admin/settings', label: 'ตั้งค่า' },
   ];
 
-  const links = role === 'admin' ? adminLinks : role === 'user' ? userLinks : publicLinks;
+  const isAdminRole = role === 'admin' || role === 'super_admin' || role === 'clinic_admin';
+  const isUserRole = role === 'user' || role === 'customer';
+
+  const links = isAdminRole ? adminLinks : isUserRole ? userLinks : publicLinks;
 
   return (
     <nav className="glass-ios border-b border-border-ios sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-6 lg:px-12">
         <div className="flex justify-between h-20">
           <div className="flex items-center gap-12">
-            <Link href="/" className="flex-shrink-0 flex items-center group">
+            <Link href={clinicSlug ? `/c/${clinicSlug}` : "/"} className="shrink-0 flex items-center group">
               <span className="text-2xl font-display font-black tracking-tighter text-foreground group-hover:text-accent transition-colors">
-                Aura <span className="font-light text-foreground-muted">Clinic</span>
+                {clinicLabel.split(' ')[0]} <span className="font-light text-foreground-muted">{clinicLabel.split(' ').slice(1).join(' ')}</span>
               </span>
             </Link>
             <div className="hidden md:flex items-center gap-8">
@@ -56,16 +71,23 @@ export function Navbar({ role }: { role?: 'admin' | 'user' | null }) {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            {role ? (
-              <button 
-                onClick={async () => {
-                  await fetch('/api/auth', { method: 'DELETE' });
-                  window.location.href = '/';
-                }}
-                className="px-6 py-2.5 bg-foreground text-white rounded-full text-[12px] font-black uppercase tracking-widest hover:bg-foreground/80 transition-all shadow-md active:scale-95"
-              >
-                ออกจากระบบ
-              </button>
+            {user ? (
+              <div className="flex items-center gap-6">
+                <div className="hidden sm:flex flex-col items-end">
+                  <span className="text-[12px] font-black text-foreground uppercase tracking-wider">{user.name}</span>
+                  <span className="text-[9px] font-bold text-accent uppercase tracking-widest leading-none mt-0.5">{role?.replace('_', ' ')}</span>
+                </div>
+                <div className="h-4 w-px bg-border-ios/60 mx-1 hidden sm:block"></div>
+                <button 
+                  onClick={async () => {
+                    await fetch('/api/auth', { method: 'DELETE' });
+                    window.location.href = clinicSlug ? `/c/${clinicSlug}` : '/';
+                  }}
+                  className="px-6 py-2.5 bg-foreground text-white rounded-full text-[12px] font-black uppercase tracking-widest hover:bg-foreground/80 transition-all shadow-md active:scale-95"
+                >
+                  ออกจากระบบ
+                </button>
+              </div>
             ) : (
               <Link
                 href="/login"

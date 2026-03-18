@@ -7,9 +7,10 @@ import { format } from 'date-fns';
 import { APPOINTMENT_STATUS } from '@/lib/constants';
 
 export class DbBookingRepository implements IBookingRepository {
-  async findAll(): Promise<Appointment[]> {
+  async findAll(clinicId: string): Promise<Appointment[]> {
     if (!db) throw new Error('Database not connected');
     const results = await db.query.appointments.findMany({
+      where: eq(appointments.clinicId, clinicId),
       with: {
         user: true,
         service: true,
@@ -18,10 +19,10 @@ export class DbBookingRepository implements IBookingRepository {
     return results.map(this.mapToEntity);
   }
 
-  async findByUserId(userId: string): Promise<Appointment[]> {
+  async findByUserId(userId: string, clinicId: string): Promise<Appointment[]> {
     if (!db) throw new Error('Database not connected');
     const results = await db.query.appointments.findMany({
-      where: eq(appointments.userId, userId),
+      where: and(eq(appointments.userId, userId), eq(appointments.clinicId, clinicId)),
       with: {
         service: true,
       }
@@ -29,10 +30,10 @@ export class DbBookingRepository implements IBookingRepository {
     return results.map(this.mapToEntity);
   }
 
-  async findById(id: string): Promise<Appointment | null> {
+  async findById(id: string, clinicId: string): Promise<Appointment | null> {
     if (!db) throw new Error('Database not connected');
     const result = await db.query.appointments.findFirst({
-      where: eq(appointments.id, id),
+      where: and(eq(appointments.id, id), eq(appointments.clinicId, clinicId)),
       with: {
         user: true,
         service: true,
@@ -49,42 +50,50 @@ export class DbBookingRepository implements IBookingRepository {
       status: APPOINTMENT_STATUS.PENDING,
     }).returning();
     
-    // Fetch again with RELATIONS if needed or just return mapped
-    return this.findById(result.id) as Promise<Appointment>;
+    return this.findById(result.id, data.clinicId) as Promise<Appointment>;
   }
 
-  async updateStatus(id: string, status: Appointment['status']): Promise<Appointment> {
+  async updateStatus(id: string, clinicId: string, status: Appointment['status']): Promise<Appointment> {
     if (!db) throw new Error('Database not connected');
-    await db.update(appointments).set({ status, updatedAt: new Date() }).where(eq(appointments.id, id));
-    return this.findById(id) as Promise<Appointment>;
+    await db.update(appointments)
+      .set({ status, updatedAt: new Date() })
+      .where(and(eq(appointments.id, id), eq(appointments.clinicId, clinicId)));
+    return this.findById(id, clinicId) as Promise<Appointment>;
   }
 
-  async getAppointmentsByDate(date: Date): Promise<Appointment[]> {
+  async getAppointmentsByDate(date: Date, clinicId: string): Promise<Appointment[]> {
     if (!db) throw new Error('Database not connected');
     const dStr = format(date, 'yyyy-MM-dd');
     const results = await db.query.appointments.findMany({
-      where: sql`DATE(${appointments.appointmentDate}) = ${dStr}`,
+      where: and(
+        sql`DATE(${appointments.appointmentDate}) = ${dStr}`,
+        eq(appointments.clinicId, clinicId)
+      ),
     });
     return results.map(this.mapToEntity);
   }
 
-  async getBusinessHours(): Promise<BusinessHours[]> {
+  async getBusinessHours(clinicId: string): Promise<BusinessHours[]> {
     if (!db) throw new Error('Database not connected');
-    return await db.query.businessHours.findMany();
+    return await db.query.businessHours.findMany({
+      where: eq(businessHours.clinicId, clinicId),
+    });
   }
 
-  async getBlockedSlots(date: Date): Promise<BlockedSlot[]> {
+  async getBlockedSlots(date: Date, clinicId: string): Promise<BlockedSlot[]> {
     if (!db) throw new Error('Database not connected');
     const dStr = format(date, 'yyyy-MM-dd');
     return await db.query.blockedSlots.findMany({
-      where: sql`DATE(${blockedSlots.blockedDate}) = ${dStr}`,
+      where: and(
+        sql`DATE(${blockedSlots.blockedDate}) = ${dStr}`,
+        eq(blockedSlots.clinicId, clinicId)
+      ),
     });
   }
 
   private mapToEntity(data: any): Appointment {
     return {
       ...data,
-      // Ensure specific fields are correctly types if needed
     };
   }
 }

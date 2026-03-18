@@ -20,5 +20,5 @@ export async function checkRole(allowedRoles: Role[]) {
 
 export async function isAdmin() {
   const session = await getSession();
-  return session?.role === ROLES.ADMIN;
+  return session?.role === ROLES.ADMIN || session?.role === ROLES.SUPER_ADMIN || session?.role === ROLES.CLINIC_ADMIN;
 }

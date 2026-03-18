@@ -1,9 +1,8 @@
-import { AppointmentStatus } from '@/lib/constants';
-
 export interface Service {
   id: string;
+  clinicId: string;
   name: string;
-  description?: string | null;
+  description: string | null;
   durationMin: number;
   price: number;
   isActive: boolean;
@@ -12,6 +11,7 @@ export interface Service {
 }
 
 export interface CreateServiceInput {
+  clinicId: string;
   name: string;
   description?: string;
   durationMin: number;
@@ -19,6 +19,10 @@ export interface CreateServiceInput {
   isActive?: boolean;
 }
 
-export interface UpdateServiceInput extends Partial<CreateServiceInput> {
-  id: string;
+export interface UpdateServiceInput {
+  name?: string;
+  description?: string;
+  durationMin?: number;
+  price?: number;
+  isActive?: boolean;
 }

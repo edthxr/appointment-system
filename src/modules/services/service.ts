@@ -4,30 +4,28 @@ import { CreateServiceInput, UpdateServiceInput, Service } from './types';
 export class ServiceService {
   constructor(private serviceRepo: IServiceRepository) {}
 
-  async getAllServices(): Promise<Service[]> {
-    return this.serviceRepo.findAll();
+  async getAllServices(clinicId: string): Promise<Service[]> {
+    return this.serviceRepo.findAll(clinicId);
   }
 
-  async getServiceById(id: string): Promise<Service | null> {
-    return this.serviceRepo.findById(id);
+  async getServiceById(id: string, clinicId: string): Promise<Service | null> {
+    return this.serviceRepo.findById(id, clinicId);
   }
 
   async createService(data: CreateServiceInput): Promise<Service> {
     return this.serviceRepo.create(data);
   }
 
-  async updateService(id: string, data: UpdateServiceInput): Promise<Service> {
-    const existing = await this.serviceRepo.findById(id);
+  async updateService(id: string, clinicId: string, data: UpdateServiceInput): Promise<Service> {
+    const existing = await this.serviceRepo.findById(id, clinicId);
     if (!existing) throw new Error('ไม่พบข้อมูลบริการ');
-    return this.serviceRepo.update(id, data);
+    return this.serviceRepo.update(id, clinicId, data);
   }
 
-  async deleteService(id: string): Promise<void> {
-    const existing = await this.serviceRepo.findById(id);
+  async deleteService(id: string, clinicId: string): Promise<void> {
+    const existing = await this.serviceRepo.findById(id, clinicId);
     if (!existing) throw new Error('ไม่พบข้อมูลบริการ');
     
-    // In a real app, you might want to check for active appointments before deleting
-    // Or just mark as inactive
-    return this.serviceRepo.delete(id);
+    return this.serviceRepo.delete(id, clinicId);
   }
 }

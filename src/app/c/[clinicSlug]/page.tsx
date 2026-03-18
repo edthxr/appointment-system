@@ -1,6 +1,12 @@
+'use client';
+
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 
 export default function HomePage() {
+  const params = useParams();
+  const clinicSlug = params?.clinicSlug as string;
+
   return (
     <div className="animate-in fade-in duration-1000">
       {/* Hero Section */}
@@ -18,13 +24,13 @@ export default function HomePage() {
         </p>
         <div className="flex flex-col sm:flex-row gap-6 justify-center items-center animate-in fade-in duration-1000 delay-500">
           <Link
-            href="/services"
+            href={`/c/${clinicSlug}/services`}
             className="w-full sm:w-auto bg-foreground text-white px-12 py-5 rounded-full text-[12px] font-black uppercase tracking-[0.3em] shadow-2xl hover:bg-foreground/80 hover:scale-105 transition-all active:scale-95"
           >
             Explore Menu
           </Link>
           <Link
-            href="/booking"
+            href={`/c/${clinicSlug}/booking`}
             className="w-full sm:w-auto bg-transparent text-foreground px-12 py-5 rounded-full text-[12px] font-black uppercase tracking-[0.3em] border border-border-ios hover:bg-surface transition-all"
           >
             Reservation

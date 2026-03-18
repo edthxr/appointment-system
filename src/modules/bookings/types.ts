@@ -2,6 +2,7 @@ import { AppointmentStatus } from '@/lib/constants';
 
 export interface Appointment {
   id: string;
+  clinicId: string;
   userId: string;
   serviceId: string;
   appointmentDate: Date;
@@ -18,6 +19,7 @@ export interface Appointment {
 }
 
 export interface CreateBookingInput {
+  clinicId: string;
   userId: string;
   serviceId: string;
   appointmentDate: Date;
@@ -26,6 +28,8 @@ export interface CreateBookingInput {
 }
 
 export interface BusinessHours {
+  id: string;
+  clinicId: string;
   dayOfWeek: number;
   startTime: string;
   endTime: string;
@@ -34,6 +38,7 @@ export interface BusinessHours {
 
 export interface BlockedSlot {
   id: string;
+  clinicId: string;
   blockedDate: Date;
   startTime?: string | null;
   endTime?: string | null;

@@ -4,20 +4,21 @@ import { timeFromMinutes, getMinutesFromTime } from '@/lib/date';
 import { APPOINTMENT_STATUS } from '@/lib/constants';
 
 export interface IBookingRepository {
-  findAll(): Promise<Appointment[]>;
-  findByUserId(userId: string): Promise<Appointment[]>;
-  findById(id: string): Promise<Appointment | null>;
+  findAll(clinicId: string): Promise<Appointment[]>;
+  findByUserId(userId: string, clinicId: string): Promise<Appointment[]>;
+  findById(id: string, clinicId: string): Promise<Appointment | null>;
   create(data: CreateBookingInput, endTime: string): Promise<Appointment>;
-  updateStatus(id: string, status: Appointment['status']): Promise<Appointment>;
-  getAppointmentsByDate(date: Date): Promise<Appointment[]>;
-  getBusinessHours(): Promise<BusinessHours[]>;
-  getBlockedSlots(date: Date): Promise<BlockedSlot[]>;
+  updateStatus(id: string, clinicId: string, status: Appointment['status']): Promise<Appointment>;
+  getAppointmentsByDate(date: Date, clinicId: string): Promise<Appointment[]>;
+  getBusinessHours(clinicId: string): Promise<BusinessHours[]>;
+  getBlockedSlots(date: Date, clinicId: string): Promise<BlockedSlot[]>;
 }
 
 // Mock Data
 const MOCK_APPOINTMENTS: Appointment[] = [
   {
     id: 'a1',
+    clinicId: 'default-clinic-id',
     userId: 'u1',
     serviceId: 's1',
     appointmentDate: new Date(),
@@ -32,18 +33,19 @@ const MOCK_APPOINTMENTS: Appointment[] = [
 ];
 
 const MOCK_BUSINESS_HOURS: BusinessHours[] = [
-  { dayOfWeek: 1, startTime: '09:00', endTime: '18:00', isOpen: true },
-  { dayOfWeek: 2, startTime: '09:00', endTime: '18:00', isOpen: true },
-  { dayOfWeek: 3, startTime: '09:00', endTime: '18:00', isOpen: true },
-  { dayOfWeek: 4, startTime: '09:00', endTime: '18:00', isOpen: true },
-  { dayOfWeek: 5, startTime: '09:00', endTime: '18:00', isOpen: true },
-  { dayOfWeek: 6, startTime: '10:00', endTime: '16:00', isOpen: true },
-  { dayOfWeek: 0, startTime: '00:00', endTime: '00:00', isOpen: false },
+  { id: 'bh1', clinicId: 'default-clinic-id', dayOfWeek: 1, startTime: '09:00', endTime: '18:00', isOpen: true },
+  { id: 'bh2', clinicId: 'default-clinic-id', dayOfWeek: 2, startTime: '09:00', endTime: '18:00', isOpen: true },
+  { id: 'bh3', clinicId: 'default-clinic-id', dayOfWeek: 3, startTime: '09:00', endTime: '18:00', isOpen: true },
+  { id: 'bh4', clinicId: 'default-clinic-id', dayOfWeek: 4, startTime: '09:00', endTime: '18:00', isOpen: true },
+  { id: 'bh5', clinicId: 'default-clinic-id', dayOfWeek: 5, startTime: '09:00', endTime: '18:00', isOpen: true },
+  { id: 'bh6', clinicId: 'default-clinic-id', dayOfWeek: 6, startTime: '10:00', endTime: '16:00', isOpen: true },
+  { id: 'bh7', clinicId: 'default-clinic-id', dayOfWeek: 0, startTime: '00:00', endTime: '00:00', isOpen: false },
 ];
 
 const MOCK_BLOCKED_SLOTS: BlockedSlot[] = [
   {
     id: 'b1',
+    clinicId: 'default-clinic-id',
     blockedDate: new Date(),
     startTime: '12:00',
     endTime: '13:00',
@@ -52,14 +54,14 @@ const MOCK_BLOCKED_SLOTS: BlockedSlot[] = [
 ];
 
 export class MockBookingRepository implements IBookingRepository {
-  async findAll(): Promise<Appointment[]> {
-    return MOCK_APPOINTMENTS;
+  async findAll(clinicId: string): Promise<Appointment[]> {
+    return MOCK_APPOINTMENTS.filter(a => a.clinicId === clinicId);
   }
-  async findByUserId(userId: string): Promise<Appointment[]> {
-    return MOCK_APPOINTMENTS.filter((a) => a.userId === userId);
+  async findByUserId(userId: string, clinicId: string): Promise<Appointment[]> {
+    return MOCK_APPOINTMENTS.filter((a) => a.userId === userId && a.clinicId === clinicId);
   }
-  async findById(id: string): Promise<Appointment | null> {
-    return MOCK_APPOINTMENTS.find((a) => a.id === id) || null;
+  async findById(id: string, clinicId: string): Promise<Appointment | null> {
+    return MOCK_APPOINTMENTS.find((a) => a.id === id && a.clinicId === clinicId) || null;
   }
   async create(data: CreateBookingInput, endTime: string): Promise<Appointment> {
     const newBooking: Appointment = {
@@ -73,21 +75,22 @@ export class MockBookingRepository implements IBookingRepository {
     MOCK_APPOINTMENTS.push(newBooking);
     return newBooking;
   }
-  async updateStatus(id: string, status: Appointment['status']): Promise<Appointment> {
-    const index = MOCK_APPOINTMENTS.findIndex((a) => a.id === id);
+  async updateStatus(id: string, clinicId: string, status: Appointment['status']): Promise<Appointment> {
+    const index = MOCK_APPOINTMENTS.findIndex((a) => a.id === id && a.clinicId === clinicId);
     if (index === -1) throw new Error('Appointment not found');
     MOCK_APPOINTMENTS[index].status = status;
+    MOCK_APPOINTMENTS[index].updatedAt = new Date();
     return MOCK_APPOINTMENTS[index];
   }
-  async getAppointmentsByDate(date: Date): Promise<Appointment[]> {
+  async getAppointmentsByDate(date: Date, clinicId: string): Promise<Appointment[]> {
     const dStr = format(date, 'yyyy-MM-dd');
-    return MOCK_APPOINTMENTS.filter((a) => format(a.appointmentDate, 'yyyy-MM-dd') === dStr);
+    return MOCK_APPOINTMENTS.filter((a) => format(a.appointmentDate, 'yyyy-MM-dd') === dStr && a.clinicId === clinicId);
   }
-  async getBusinessHours(): Promise<BusinessHours[]> {
-    return MOCK_BUSINESS_HOURS;
+  async getBusinessHours(clinicId: string): Promise<BusinessHours[]> {
+    return MOCK_BUSINESS_HOURS.filter(bh => bh.clinicId === clinicId);
   }
-  async getBlockedSlots(date: Date): Promise<BlockedSlot[]> {
+  async getBlockedSlots(date: Date, clinicId: string): Promise<BlockedSlot[]> {
     const dStr = format(date, 'yyyy-MM-dd');
-    return MOCK_BLOCKED_SLOTS.filter((b) => format(b.blockedDate, 'yyyy-MM-dd') === dStr);
+    return MOCK_BLOCKED_SLOTS.filter((b) => format(b.blockedDate, 'yyyy-MM-dd') === dStr && b.clinicId === clinicId);
   }
 }

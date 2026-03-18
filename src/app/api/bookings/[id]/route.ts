@@ -4,6 +4,8 @@ import { BookingService } from '@/modules/bookings/service';
 import { registry } from '@/lib/registry';
 import { getSession } from '@/lib/session';
 
+import { getClinicBySlug } from '@/lib/tenant';
+
 const bookingService = new BookingService(registry.bookingRepo, registry.serviceRepo);
 
 export async function PATCH(
@@ -16,14 +18,27 @@ export async function PATCH(
       return apiResponse.error('กรุณาเข้าสู่ระบบ', 401);
     }
 
+    const { searchParams } = new URL(req.url);
+    const clinicSlug = searchParams.get('clinicSlug');
+
+    if (!clinicSlug) {
+      return apiResponse.error('clinicSlug is required', 400);
+    }
+
+    const clinic = await getClinicBySlug(clinicSlug);
+    if (!clinic) {
+      return apiResponse.error('Clinic not found', 404);
+    }
+
     const body = await req.json();
     const { status } = body;
 
     const updated = await bookingService.updateStatus(
       params.id,
+      clinic.id,
       status,
       session.id,
-      session.role === 'admin'
+      session.role === 'admin' || session.role === 'super_admin'
     );
 
     return apiResponse.success(updated, 'อัปเดตสถานะสำเร็จ');

@@ -2,25 +2,29 @@
 
 import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
+import { useParams } from 'next/navigation';
 
 export default function MyBookingsPage() {
+  const params = useParams();
+  const clinicSlug = params?.clinicSlug as string;
   const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/appointments')
+    if (!clinicSlug) return;
+    fetch(`/api/appointments?clinicSlug=${clinicSlug}`)
       .then((res) => res.json())
       .then((res) => {
         if (res.success) setBookings(res.data);
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [clinicSlug]);
 
   const handleCancel = async (id: string) => {
     if (!confirm('คุณต้องการยกเลิกการนัดหมายนี้ใช่หรือไม่?')) return;
 
     try {
-      const res = await fetch(`/api/bookings/${id}`, {
+      const res = await fetch(`/api/bookings/${id}?clinicSlug=${clinicSlug}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'cancelled' }),

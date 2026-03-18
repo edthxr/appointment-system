@@ -7,48 +7,28 @@ export class AuthService {
   constructor(private userRepo: IUserRepository) {}
 
   async login(credentials: LoginCredentials): Promise<User> {
-    const user = await this.userRepo.findByEmail(credentials.email);
+    const user = await this.userRepo.findWithPasswordByEmail(credentials.email);
     
-    // In a real app, verify password hash
     if (!user) {
       throw new Error('อีเมลหรือรหัสผ่านไม่ถูกต้อง');
     }
 
-    // Check if user has a passwordHash (Db mode)
-    // For mock mode, we still allow the hardcoded check for the demo users
-    const isMockAdmin = credentials.email === 'admin@example.com' && credentials.password === 'admin123';
-    const isMockUser = credentials.email === 'user@example.com' && credentials.password === 'user123';
+    const isValid = await bcrypt.compare(credentials.password, user.passwordHash);
     
-    let isValid = false;
-    
-    // If it's a DB user (from registration), it will have a passwordHash field in the row
-    // result[0] in db-repository returns the whole row, but the User interface doesn't have passwordHash.
-    // We need to cast it or handle it in the repository.
-    // Let's assume the repository returns the user object, but we might need the hash for comparison.
-    
-    // Actually, I should probably update the findByEmail to return the hash too if I want to check it here.
-    // Or I can add a specialized method `findWithPasswordByEmail`.
-    
-    // FOR NOW: Let's assume the user object from repository might have passwordHash if it's from DB.
-    const userWithHash = user as any;
-    if (userWithHash.passwordHash) {
-      isValid = await bcrypt.compare(credentials.password, userWithHash.passwordHash);
-    } else {
-      isValid = isMockAdmin || isMockUser;
-    }
-
     if (!isValid) {
       throw new Error('อีเมลหรือรหัสผ่านไม่ถูกต้อง');
     }
 
+    const { passwordHash, ...safeUser } = user;
+
     await setSession({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
+      id: safeUser.id,
+      name: safeUser.name,
+      email: safeUser.email,
+      role: safeUser.role,
     });
 
-    return user;
+    return safeUser;
   }
 
   async register(data: RegisterInput): Promise<User> {
