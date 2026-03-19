@@ -29,12 +29,23 @@ export async function GET(req: NextRequest) {
       return apiResponse.error('กรุณาเข้าสู่ระบบ', 401);
     }
 
-    const notifications = await notificationRepo.findByUserId(session.id, clinicId, page, limit);
+    const filters: any = {};
+    const isReadParam = searchParams.get('isRead');
+    if (isReadParam !== null) {
+      filters.isRead = isReadParam === 'true';
+    }
+
+    const [notifications, unreadCount] = await Promise.all([
+      notificationRepo.findByUserId(session.id, clinicId, page, limit, filters),
+      notificationRepo.getUnreadCount(clinicId, session.id)
+    ]);
+
     return apiResponse.success(notifications.data, undefined, 200, {
       total: notifications.total,
       page: notifications.page,
       limit: notifications.limit,
       totalPages: notifications.totalPages,
+      unreadCount
     });
   } catch (error: any) {
     console.error('Fetch notifications error:', error);

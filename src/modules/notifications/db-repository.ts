@@ -22,16 +22,22 @@ export class DbNotificationRepository implements INotificationRepository {
     return result as Notification;
   }
 
-  async findByUserId(userId: string, clinicId: string, page = 1, limit = 10): Promise<PaginatedResult<Notification>> {
+  async findByUserId(userId: string, clinicId: string, page = 1, limit = 10, filters?: { isRead?: boolean }): Promise<PaginatedResult<Notification>> {
     if (!db) throw new Error('Database not connected');
     
     const offset = (page - 1) * limit;
-    const whereClause = and(
+    const conditions = [
       eq(notifications.userId, userId), 
       eq(notifications.clinicId, clinicId),
       // Prevent system notifications (Admin only) from showing in customer feed
-      not(eq(notifications.channel, 'system' as any)) 
-    );
+      not(eq(notifications.channel, 'system' as any))
+    ];
+
+    if (filters && filters.isRead !== undefined) {
+      conditions.push(eq(notifications.isRead, filters.isRead));
+    }
+
+    const whereClause = and(...conditions);
     
     const [data, totalResult] = await Promise.all([
       db.query.notifications.findMany({
@@ -103,14 +109,26 @@ export class DbNotificationRepository implements INotificationRepository {
     await db.update(notifications).set({ isRead: true, readAt: new Date() }).where(eq(notifications.id, id));
   }
 
-  async markAllAsRead(clinicId: string): Promise<void> {
+  async markAllAsRead(clinicId: string, userId?: string): Promise<void> {
     if (!db) throw new Error('Database not connected');
-    await db.update(notifications).set({ isRead: true, readAt: new Date() }).where(eq(notifications.clinicId, clinicId));
+    const conditions = [eq(notifications.clinicId, clinicId)];
+    if (userId) {
+      conditions.push(eq(notifications.userId, userId));
+    }
+    await db.update(notifications).set({ isRead: true, readAt: new Date() }).where(and(...conditions));
   }
 
-  async getUnreadCount(clinicId: string): Promise<number> {
+  async getUnreadCount(clinicId: string, userId?: string): Promise<number> {
     if (!db) throw new Error('Database not connected');
-    const [result] = await db.select({ count: count() }).from(notifications).where(and(eq(notifications.clinicId, clinicId), eq(notifications.isRead, false)));
+    const conditions = [
+      eq(notifications.clinicId, clinicId), 
+      eq(notifications.isRead, false),
+      not(eq(notifications.channel, 'system' as any))
+    ];
+    if (userId) {
+      conditions.push(eq(notifications.userId, userId));
+    }
+    const [result] = await db.select({ count: count() }).from(notifications).where(and(...conditions));
     return Number(result?.count || 0);
   }
 }

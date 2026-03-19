@@ -91,7 +91,7 @@ export class BookingService {
       // Also send system notification for Admin Toast
       await this.notificationService.send({
         clinicId: data.clinicId,
-        // userId: data.userId, // REMOVED: Link to the customer who booked shouldn't mean they see it
+        userId: data.userId, // ADDED: Link to the customer who booked so Admin knows who it is
         appointmentId: booking.id,
         channel: 'system',
         type: 'booking_created',
@@ -151,11 +151,13 @@ export class BookingService {
       // Also send system notification for Admin (internal log)
       await this.notificationService.send({
         clinicId,
-        // userId: user.id, // REMOVED: System logs shouldn't be tied to the customer's inbox
+        userId: user.id, // ADDED: Attribution for admin view
         appointmentId: id,
         channel: 'system',
         type,
-        message: `${message} (ลูกค้า: ${user.name})`
+        message: status === 'cancelled' 
+          ? `การจอง ${service.name} ของลูกค้าถูกยกเลิกแล้ว (ลูกค้า: ${user.name})`
+          : `การจอง ${service.name} ของลูกค้าได้รับการยืนยันแล้ว (ลูกค้า: ${user.name})`
       });
     }
 

@@ -110,7 +110,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         const newUnreadCount = result.metadata.unreadCount;
         setUnreadCount(newUnreadCount);
         
-        const latestNotifications = result.data.filter((n: any) => !n.isRead);
+        const latestNotifications = result.data.filter((n: any) => !n.isRead && n.channel === 'system');
         
         if (latestNotifications.length > 0) {
           const newest = latestNotifications[0];

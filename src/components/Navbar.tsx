@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { cn } from '@/lib/utils'; // I'll create this helper in src/lib/utils.ts
+import { cn } from '@/lib/utils';
+import { CustomerNotificationDropdown } from './CustomerNotificationDropdown';
 
 import { ROLES, Role } from '@/lib/constants';
 
@@ -102,6 +103,9 @@ export function Navbar({
             </div>
           </div>
           <div className="flex items-center gap-4">
+            {user && clinicSlug && (
+              <CustomerNotificationDropdown clinicSlug={clinicSlug} />
+            )}
             {user ? (
               <div className="relative group/user">
                 {/* Trigger: User Info */}

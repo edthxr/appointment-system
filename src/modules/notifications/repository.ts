@@ -4,11 +4,11 @@ import { PaginatedResult } from '@/lib/types';
 export interface INotificationRepository {
   create(data: Partial<Notification>): Promise<Notification>;
   update(id: string, data: Partial<Notification>): Promise<Notification>;
-  findByUserId(userId: string, clinicId: string, page?: number, limit?: number): Promise<PaginatedResult<Notification>>;
+  findByUserId(userId: string, clinicId: string, page?: number, limit?: number, filters?: { isRead?: boolean }): Promise<PaginatedResult<Notification>>;
   findAll(clinicId: string, page?: number, limit?: number, filters?: { isRead?: boolean, type?: string, channel?: string }): Promise<PaginatedResult<Notification>>;
   markAsRead(id: string): Promise<void>;
-  markAllAsRead(clinicId: string): Promise<void>;
-  getUnreadCount(clinicId: string): Promise<number>;
+  markAllAsRead(clinicId: string, userId?: string): Promise<void>;
+  getUnreadCount(clinicId: string, userId?: string): Promise<number>;
 }
 
 export class MockNotificationRepository implements INotificationRepository {
@@ -38,8 +38,12 @@ export class MockNotificationRepository implements INotificationRepository {
     return this.notifications[index];
   }
 
-  async findByUserId(userId: string, clinicId: string, page = 1, limit = 10): Promise<PaginatedResult<Notification>> {
+  async findByUserId(userId: string, clinicId: string, page = 1, limit = 10, filters?: { isRead?: boolean }): Promise<PaginatedResult<Notification>> {
     let filtered = this.notifications.filter(n => n.userId === userId && n.clinicId === clinicId);
+    
+    if (filters && filters.isRead !== undefined) {
+      filtered = filtered.filter(n => n.isRead === filters.isRead);
+    }
     
     const start = (page - 1) * limit;
     const data = filtered.slice(start, start + limit);
@@ -88,16 +92,20 @@ export class MockNotificationRepository implements INotificationRepository {
     }
   }
 
-  async markAllAsRead(clinicId: string): Promise<void> {
+  async markAllAsRead(clinicId: string, userId?: string): Promise<void> {
     this.notifications.forEach(n => {
-      if (n.clinicId === clinicId) {
+      if (n.clinicId === clinicId && (!userId || n.userId === userId)) {
         n.isRead = true;
         n.readAt = new Date();
       }
     });
   }
 
-  async getUnreadCount(clinicId: string): Promise<number> {
-    return this.notifications.filter(n => n.clinicId === clinicId && !n.isRead).length;
+  async getUnreadCount(clinicId: string, userId?: string): Promise<number> {
+    return this.notifications.filter(n => 
+      n.clinicId === clinicId && 
+      !n.isRead && 
+      (!userId || n.userId === userId)
+    ).length;
   }
 }

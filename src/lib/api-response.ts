@@ -10,6 +10,7 @@ export type APIResponse<T = any> = {
     page: number;
     limit: number;
     totalPages: number;
+    unreadCount?: number;
   };
 };
 
