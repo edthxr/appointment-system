@@ -18,6 +18,7 @@ interface DataTableProps<T> {
   sortOrder?: 'asc' | 'desc';
   onSort?: (key: string) => void;
   emptyMessage?: string;
+  highlightId?: string | number;
 }
 
 export default function DataTable<T extends { id: string | number }>({
@@ -28,6 +29,7 @@ export default function DataTable<T extends { id: string | number }>({
   sortOrder,
   onSort,
   emptyMessage = 'ไม่พบข้อมูล',
+  highlightId,
 }: DataTableProps<T>) {
   return (
     <div className="card-luxury p-0 overflow-hidden border-border-ios/60">
@@ -112,7 +114,11 @@ export default function DataTable<T extends { id: string | number }>({
               data.map((item, rowIndex) => (
                 <tr 
                   key={item.id} 
-                  className="group hover:bg-[#FDFCFB]/50 transition-colors duration-300"
+                  className={`group relative transition-all duration-500 ${
+                    item.id === highlightId 
+                      ? 'bg-accent/5 hover:bg-accent/10 shadow-[inset_4px_0_0_0_#B4975A]' 
+                      : 'hover:bg-[#FDFCFB]/50'
+                  }`}
                 >
                   {columns.map((column, colIndex) => (
                     <td 

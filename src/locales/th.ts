@@ -12,6 +12,7 @@ export const th = {
     search: 'ค้นหา...',
     actions: 'จัดการ',
     details: 'รายละเอียด',
+    manage: 'จัดการ',
     status: 'สถานะ',
     date: 'วันที่',
     time: 'เวลา',

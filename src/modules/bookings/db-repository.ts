@@ -8,7 +8,7 @@ import { APPOINTMENT_STATUS } from '@/lib/constants';
 import { PaginatedResult } from '@/lib/types';
 
 export class DbBookingRepository implements IBookingRepository {
-  async findAll(clinicId: string, page = 1, limit = 10, search?: string, sortBy?: string, sortOrder: 'asc' | 'desc' = 'asc'): Promise<PaginatedResult<Appointment>> {
+  async findAll(clinicId: string, page = 1, limit = 10, search?: string, sortBy?: string, sortOrder: 'asc' | 'desc' = 'desc'): Promise<PaginatedResult<Appointment>> {
     if (!db) throw new Error('Database not connected');
     
     const offset = (page - 1) * limit;
@@ -55,6 +55,9 @@ export class DbBookingRepository implements IBookingRepository {
           case 'date':
             column = appointments.appointmentDate;
             break;
+          case 'createdAt':
+            column = appointments.createdAt;
+            break;
           case 'status':
             column = appointments.status;
             break;
@@ -78,7 +81,7 @@ export class DbBookingRepository implements IBookingRepository {
     };
   }
 
-  async findByUserId(userId: string, clinicId: string, page = 1, limit = 10, search?: string, sortBy?: string, sortOrder: 'asc' | 'desc' = 'asc'): Promise<PaginatedResult<Appointment>> {
+  async findByUserId(userId: string, clinicId: string, page = 1, limit = 10, search?: string, sortBy?: string, sortOrder: 'asc' | 'desc' = 'desc'): Promise<PaginatedResult<Appointment>> {
     if (!db) throw new Error('Database not connected');
     
     const offset = (page - 1) * limit;
@@ -120,6 +123,9 @@ export class DbBookingRepository implements IBookingRepository {
           case 'appointmentDate':
           case 'date':
             column = appointments.appointmentDate;
+            break;
+          case 'createdAt':
+            column = appointments.createdAt;
             break;
           case 'status':
             column = appointments.status;

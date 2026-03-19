@@ -39,7 +39,7 @@ export default function MyBookingsPage() {
     if (!clinicSlug) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/appointments?clinicSlug=${clinicSlug}&page=${page}&limit=${pageSize}&search=${debouncedSearch}`);
+      const res = await fetch(`/api/appointments?clinicSlug=${clinicSlug}&page=${page}&limit=${pageSize}&search=${debouncedSearch}&sortBy=createdAt&sortOrder=desc`);
       const data = await res.json();
       if (data.success) {
         setBookings(data.data);

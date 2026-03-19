@@ -12,6 +12,7 @@ export const en = {
     search: 'Search...',
     actions: 'Actions',
     details: 'Details',
+    manage: 'Manage',
     status: 'Status',
     date: 'Date',
     time: 'Time',

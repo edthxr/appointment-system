@@ -72,7 +72,7 @@ const MOCK_BLOCKED_SLOTS: BlockedSlot[] = [
 ];
 
 export class MockBookingRepository implements IBookingRepository {
-  async findAll(clinicId: string, page = 1, limit = 10, search?: string, sortBy?: string, sortOrder: 'asc' | 'desc' = 'asc'): Promise<PaginatedResult<Appointment>> {
+  async findAll(clinicId: string, page = 1, limit = 10, search?: string, sortBy?: string, sortOrder: 'asc' | 'desc' = 'desc'): Promise<PaginatedResult<Appointment>> {
     let all = MOCK_APPOINTMENTS.filter(a => a.clinicId === clinicId);
     
     if (search) {
@@ -120,7 +120,7 @@ export class MockBookingRepository implements IBookingRepository {
       totalPages: Math.ceil(all.length / limit),
     };
   }
-  async findByUserId(userId: string, clinicId: string, page = 1, limit = 10, search?: string, sortBy?: string, sortOrder: 'asc' | 'desc' = 'asc'): Promise<PaginatedResult<Appointment>> {
+  async findByUserId(userId: string, clinicId: string, page = 1, limit = 10, search?: string, sortBy?: string, sortOrder: 'asc' | 'desc' = 'desc'): Promise<PaginatedResult<Appointment>> {
     let all = MOCK_APPOINTMENTS.filter((a) => a.userId === userId && a.clinicId === clinicId);
     
     if (search) {
