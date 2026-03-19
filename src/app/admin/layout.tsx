@@ -23,15 +23,13 @@ export default async function AdminLayout({
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
-      <NotificationProvider>
-        <Sidebar user={session} clinic={activeClinic as any} />
-        <div className="flex-1 flex flex-col min-w-0">
-          <main className="flex-1 w-full max-w-7xl mx-auto py-12 px-6 lg:px-12 font-sans overflow-x-hidden">
-            <Breadcrumbs />
-            {children}
-          </main>
-        </div>
-      </NotificationProvider>
+      <Sidebar user={session} clinic={activeClinic as any} />
+      <div className="flex-1 flex flex-col min-w-0">
+        <main className="flex-1 w-full max-w-7xl mx-auto py-12 px-6 lg:px-12 font-sans overflow-x-hidden">
+          <Breadcrumbs />
+          {children}
+        </main>
+      </div>
     </div>
   );
 }

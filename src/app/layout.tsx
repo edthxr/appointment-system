@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Outfit, Prompt } from "next/font/google";
+import { WebProviders } from "@/providers/WebProviders";
 import "./app.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -15,8 +16,6 @@ export const metadata: Metadata = {
   description: "จองบริการฉีดวิตามิน เลเซอร์ Botox และ HIFU กับแพทย์ผู้เชี่ยวชาญที่ Aura Clinic",
 };
 
-import { LanguageProvider } from "@/providers/LanguageProvider";
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -25,9 +24,9 @@ export default function RootLayout({
   return (
     <html lang="th" className={`${inter.variable} ${outfit.variable} ${prompt.variable}`}>
       <body className="antialiased font-sans bg-background text-foreground selection:bg-accent/10">
-        <LanguageProvider>
+        <WebProviders>
           {children}
-        </LanguageProvider>
+        </WebProviders>
       </body>
     </html>
   );

@@ -58,6 +58,18 @@ export default function AdminNotificationsPage() {
     }
   };
 
+  const getChannelLabel = (channel: string) => {
+    const key = `notifications.channel_${channel.toLowerCase()}`;
+    const translated = t(key as any);
+    return translated === key ? channel : translated;
+  };
+
+  const getTypeLabel = (type: string) => {
+    const key = `notifications.type_${type.toLowerCase()}`;
+    const translated = t(key as any);
+    return translated === key ? type.replace(/_/g, ' ') : translated;
+  };
+
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-1000 pb-20">
       <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
@@ -193,11 +205,11 @@ export default function AdminNotificationsPage() {
                     </td>
                     <td className="px-6 py-5">
                       <span className="inline-flex items-center px-3 py-1 rounded-full bg-muted text-[9px] font-black text-accent uppercase tracking-widest border border-border-ios/40">
-                        {notif.channel}
+                        {getChannelLabel(notif.channel)}
                       </span>
                     </td>
                     <td className="px-6 py-5">
-                      <p className="text-[11px] font-bold text-foreground-muted uppercase tracking-widest opacity-80">{notif.type.replace('_', ' ')}</p>
+                      <p className="text-[11px] font-bold text-foreground-muted uppercase tracking-widest opacity-80">{getTypeLabel(notif.type)}</p>
                     </td>
                     <td className="px-6 py-5">
                       <div className="flex items-center gap-2">

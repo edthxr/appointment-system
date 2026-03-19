@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { useTranslation } from './LanguageProvider';
+import { useTranslation } from '@/providers/LanguageProvider';
 
 interface Notification {
   id: string;
