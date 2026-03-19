@@ -1,9 +1,14 @@
 import type { Metadata } from "next";
-import { Inter, Outfit } from "next/font/google";
-import "./globals.css";
+import { Inter, Outfit, Prompt } from "next/font/google";
+import "./app.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
+const prompt = Prompt({ 
+  subsets: ["latin", "thai"], 
+  weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
+  variable: "--font-prompt" 
+});
 
 export const metadata: Metadata = {
   title: "Aura Clinic | นัดหมายจองคิวความงามออนไลน์",
@@ -18,7 +23,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="th" className={`${inter.variable} ${outfit.variable}`}>
+    <html lang="th" className={`${inter.variable} ${outfit.variable} ${prompt.variable}`}>
       <body className="antialiased font-sans bg-background text-foreground selection:bg-accent/10">
         <LanguageProvider>
           {children}
