@@ -298,6 +298,8 @@ export const th = {
     status_verified: 'ยืนยันแล้ว',
     status_voided: 'ยกเลิกแล้ว',
     status_pending: 'รอดำเนินการ',
+    status_completed: 'เสร็จสิ้น',
+    status_confirmed: 'ยืนยันแล้ว',
     void_btn: 'ยกเลิกนัด',
     modal_title: 'ยกเลิกการนัดหมาย',
     modal_desc: 'คุณแน่ใจหรือไม่ว่าต้องการยกเลิกการนัดหมายสำหรับ {name}? การดำเนินการนี้ไม่สามารถย้อนกลับได้',

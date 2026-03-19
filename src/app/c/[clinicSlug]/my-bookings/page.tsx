@@ -2,13 +2,16 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { format } from 'date-fns';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { useTranslation } from '@/providers/LanguageProvider';
+import { cn } from '@/lib/utils';
 import Pagination from '@/components/Pagination';
 
 export default function MyBookingsPage() {
   const { t } = useTranslation();
   const params = useParams();
+  const searchParams = useSearchParams();
+  const targetBookingId = searchParams.get('bookingId');
   const clinicSlug = params?.clinicSlug as string;
   const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,7 +54,7 @@ export default function MyBookingsPage() {
 
   useEffect(() => {
     fetchBookings();
-  }, [fetchBookings]);
+  }, [fetchBookings, searchParams]); // Refresh when search parameters change (e.g. from notification click)
 
   const openCancelModal = (booking: any) => {
     setBookingToCancel(booking);
@@ -139,13 +142,17 @@ export default function MyBookingsPage() {
       ) : (
         <div className="grid gap-8">
           {bookings.map((booking) => (
-            <div key={booking.id} className="card-luxury flex flex-col md:flex-row md:items-center justify-between gap-8 group hover:border-accent/30">
+            <div 
+              key={booking.id} 
+              id={`booking-${booking.id}`}
+              className={cn(
+                "card-luxury flex flex-col md:flex-row md:items-center justify-between gap-8 group transition-all duration-500",
+                booking.id === targetBookingId ? "border-accent ring-2 ring-accent/20 bg-accent/5 scale-[1.02]" : "hover:border-accent/30"
+              )}
+            >
               <div className="flex-1">
                 <div className="flex items-center gap-4 mb-6">
                   <h3 className="text-2xl font-display font-black text-foreground tracking-tighter group-hover:text-accent transition-colors">{booking.service?.name}</h3>
-                  {booking.status === 'confirmed' && (
-                    <span className="text-[9px] bg-accent/10 text-accent px-3 py-1 rounded-full font-black uppercase tracking-[0.2em] border border-accent/20">{t('my_bookings.status_verified')}</span>
-                  )}
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                   <div className="flex items-center gap-4">
@@ -173,13 +180,15 @@ export default function MyBookingsPage() {
                 </div>
               </div>
               <div className="flex items-center justify-between md:justify-end gap-10 pt-8 md:pt-0 border-t md:border-t-0 border-border-ios">
-                <span className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+                <span className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${
                   booking.status === 'confirmed' ? 'bg-green-50 text-green-600 border-green-100' :
                   booking.status === 'cancelled' ? 'bg-red-50 text-red-600 border-red-100' :
+                  booking.status === 'completed' ? 'bg-accent/10 text-accent border-accent/20' :
                   'bg-yellow-50 text-yellow-600 border-yellow-100'
                 }`}>
                   {booking.status === 'confirmed' ? t('my_bookings.status_verified') : 
                    booking.status === 'cancelled' ? t('my_bookings.status_voided') : 
+                   booking.status === 'completed' ? t('my_bookings.status_completed') :
                    t('my_bookings.status_pending')}
                 </span>
                 

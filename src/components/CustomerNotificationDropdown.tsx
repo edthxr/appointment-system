@@ -3,7 +3,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { format } from 'date-fns';
 import { th } from 'date-fns/locale';
+import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { useCustomerNotifications } from '@/providers/CustomerNotificationProvider';
 
 interface Notification {
   id: string;
@@ -18,11 +20,13 @@ export function CustomerNotificationDropdown({ clinicSlug }: { clinicSlug: strin
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'all' | 'unread'>('all');
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+  
+  const { unreadCount, markAsRead, markAllAsRead, refresh } = useCustomerNotifications();
 
   const fetchNotifications = async (pageNum = 1, replace = false) => {
     if (isLoading) return;
@@ -38,9 +42,10 @@ export function CustomerNotificationDropdown({ clinicSlug }: { clinicSlug: strin
         } else {
           setNotifications(prev => [...prev, ...result.data]);
         }
-        setUnreadCount(result.pagination.unreadCount || 0);
         setHasMore(result.pagination.page < result.pagination.totalPages);
         setPage(result.pagination.page);
+        // Sync unread count with provider
+        refresh();
       }
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
@@ -49,27 +54,19 @@ export function CustomerNotificationDropdown({ clinicSlug }: { clinicSlug: strin
     }
   };
 
+  const handleToggle = () => {
+    const nextState = !isOpen;
+    setIsOpen(nextState);
+    if (nextState && unreadCount > 0) {
+      markAllAsRead();
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
       fetchNotifications(1, true);
     }
   }, [isOpen, activeTab]);
-
-  // Initial unread count check
-  useEffect(() => {
-    const checkUnread = async () => {
-      try {
-        const res = await fetch(`/api/notifications?clinicSlug=${clinicSlug}&limit=1`);
-        const result = await res.json();
-        if (result.success) {
-          setUnreadCount(result.pagination.unreadCount || 0);
-        }
-      } catch (e) {}
-    };
-    checkUnread();
-    const interval = setInterval(checkUnread, 30000);
-    return () => clearInterval(interval);
-  }, [clinicSlug]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -81,27 +78,37 @@ export function CustomerNotificationDropdown({ clinicSlug }: { clinicSlug: strin
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleMarkAsRead = async (id: string) => {
-    try {
-      setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
-      setUnreadCount(prev => Math.max(0, prev - 1));
-      await fetch(`/api/notifications/${id}/read`, { method: 'PATCH' });
-    } catch (e) {}
+  const handleItemClick = async (notif: Notification) => {
+    if (!notif.isRead) {
+      await markAsRead(notif.id);
+      // Update local state to reflect read status
+      setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, isRead: true } : n));
+    }
+    setIsOpen(false);
+    router.refresh();
+    router.push(`/c/${clinicSlug}/my-bookings?bookingId=${notif.appointmentId}`);
   };
 
   return (
     <div className="relative" ref={dropdownRef}>
       {/* Bell Icon Trigger */}
       <button 
-        onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 rounded-full hover:bg-muted transition-colors group"
+        onClick={handleToggle}
+        className="relative p-2 rounded-full hover:bg-muted transition-colors group group/tip cursor-pointer active:scale-95"
       >
         <svg className="w-6 h-6 text-foreground-muted group-hover:text-foreground transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
         </svg>
         {unreadCount > 0 && (
-          <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-red-500 text-white text-[10px] font-black flex items-center justify-center rounded-full ring-2 ring-white">
+          <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-accent text-white text-[10px] font-black flex items-center justify-center rounded-full ring-2 ring-white animate-in zoom-in duration-300">
             {unreadCount > 9 ? '9+' : unreadCount}
+          </span>
+        )}
+        
+        {/* Premium Tooltip */}
+        {!isOpen && (
+          <span className="absolute top-full left-1/2 -translate-x-1/2 mt-3 px-3 py-1.5 rounded-xl bg-foreground/90 backdrop-blur-xl text-white text-[9px] font-black uppercase tracking-[0.2em] whitespace-nowrap opacity-0 scale-90 -translate-y-2 group-hover/tip:opacity-100 group-hover/tip:scale-100 group-hover/tip:translate-y-0 transition-all duration-500 pointer-events-none shadow-2xl border border-white/10 z-20">
+            การแจ้งเตือน
           </span>
         )}
       </button>
@@ -139,7 +146,7 @@ export function CustomerNotificationDropdown({ clinicSlug }: { clinicSlug: strin
                 {notifications.map((notif) => (
                   <div 
                     key={notif.id}
-                    onClick={() => handleMarkAsRead(notif.id)}
+                    onClick={() => handleItemClick(notif)}
                     className={cn(
                       "p-4 px-5 flex gap-4 cursor-pointer transition-all hover:bg-muted/50 relative group",
                       !notif.isRead && "bg-accent/5"

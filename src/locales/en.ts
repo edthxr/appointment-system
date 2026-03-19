@@ -298,6 +298,8 @@ export const en = {
     status_verified: 'Verified',
     status_voided: 'Voided',
     status_pending: 'Pending',
+    status_completed: 'Completed',
+    status_confirmed: 'Confirmed',
     void_btn: 'Void Appt',
     modal_title: 'Void Appointment',
     modal_desc: 'Are you sure you want to cancel the visit for {name}? This action cannot be undone.',
