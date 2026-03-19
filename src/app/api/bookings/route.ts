@@ -3,6 +3,7 @@ import { apiResponse } from '@/lib/api-response';
 import { registry } from '@/lib/registry';
 import { BookingService } from '@/modules/bookings/service';
 import { getSession } from '@/lib/session';
+import { logPlatformActivity } from '@/lib/audit-logger';
 
 import { getClinicBySlug } from '@/lib/tenant';
 
@@ -59,6 +60,18 @@ export async function POST(req: NextRequest) {
       userId: session.id,
       appointmentDate: new Date(body.appointmentDate),
     });
+
+    await logPlatformActivity({
+      eventType: 'booking_created',
+      actorUserId: session.id,
+      actorRole: session.role || 'customer',
+      clinicId: clinicId,
+      entityType: 'booking',
+      entityId: result.id,
+      action: 'create',
+      summary: `Created booking for service`,
+    });
+
     return apiResponse.success(result, 'จองคิวสำเร็จ', 201);
   } catch (error: any) {
     return apiResponse.error(error.message);

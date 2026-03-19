@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { Sparkles, AlertTriangle, CreditCard, Rocket, Shield, ShieldAlert, Activity, Calendar } from 'lucide-react';
 
 type ClinicStats = {
   id: string;
@@ -23,8 +24,20 @@ export default function SuperAdminDashboard() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   
+  const [activities, setActivities] = useState<any[]>([]);
+  const [loadingActivities, setLoadingActivities] = useState(true);
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'banned'>('all');
+
+  const slugify = (text: string) => {
+    return text
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9-]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+  };
 
   const Sparkline = () => (
     <svg className="w-full h-12 text-accent opacity-50" viewBox="0 0 100 20" preserveAspectRatio="none">
@@ -34,7 +47,22 @@ export default function SuperAdminDashboard() {
 
   useEffect(() => {
     fetchClinics();
+    fetchActivities();
   }, []);
+
+  const fetchActivities = async () => {
+    try {
+      const res = await fetch('/api/superadmin/recent-activity');
+      const data = await res.json();
+      if (data.success) {
+        setActivities(data.data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch activities:', err);
+    } finally {
+      setLoadingActivities(false);
+    }
+  };
 
   const fetchClinics = async () => {
     try {
@@ -271,31 +299,59 @@ export default function SuperAdminDashboard() {
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-white rounded-[2rem] p-8 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-300">
-            <h2 className="text-2xl font-display font-black tracking-tighter text-foreground mb-1">Provision Tenant</h2>
-            <p className="text-[11px] font-bold text-foreground-muted uppercase tracking-widest mb-6">Create immediately dedicated workspace</p>
+          <div className="bg-white rounded-[3rem] p-10 max-w-lg w-full shadow-2xl animate-in zoom-in-95 duration-300">
+            <h2 className="text-[32px] font-display font-black tracking-tighter text-foreground mb-1">Provision Tenant</h2>
+            <p className="text-[11px] font-bold text-foreground-muted uppercase tracking-widest mb-10">Create immediately dedicated workspace</p>
             
-            {error && <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-xl text-[12px] font-bold">{error}</div>}
+            {error && <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-2xl text-[12px] font-bold">{error}</div>}
             
-            <form onSubmit={handleCreateClinic} className="space-y-5">
-              <div>
-                <label className="block text-[10px] font-black text-foreground-muted uppercase tracking-[0.2em] mb-2 ml-2">Registered Clinic Name</label>
-                <input required type="text" className="w-full text-[13px] py-3 px-4" placeholder="e.g. Aura Premium Clinic" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
-              </div>
-              <div>
-                <label className="block text-[10px] font-black text-foreground-muted uppercase tracking-[0.2em] mb-2 ml-2">URL Routing Slug</label>
-                <div className="relative">
-                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                      <span className="text-foreground-muted text-[13px]">/c/</span>
-                   </div>
-                   <input required type="text" className="w-full pl-10 text-[13px] py-3 px-4 font-mono lowercase" placeholder="aura-premium" value={formData.slug} onChange={e => setFormData({...formData, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '')})} />
+            <form onSubmit={handleCreateClinic} className="space-y-8">
+              <div className="space-y-3">
+                <label className="block text-[10px] font-black text-foreground-muted uppercase tracking-[0.2em] ml-2">Registered Clinic Name</label>
+                <div className="p-2 rounded-4xl border border-border-ios/20 bg-white">
+                  <input 
+                    required 
+                    type="text" 
+                    className="w-full bg-muted/20 rounded-3xl py-5 px-8 text-[14px] font-medium border-none focus:outline-none focus:ring-2 ring-accent/20 placeholder:text-foreground-muted/40 transition-all font-sans" 
+                    placeholder="e.g. Aura Premium Clinic" 
+                    value={formData.name} 
+                    onChange={e => {
+                      const newName = e.target.value;
+                      setFormData(prev => {
+                        const oldAutoSlug = slugify(prev.name);
+                        const isAutoSlugOrEmpty = prev.slug === '' || prev.slug === oldAutoSlug;
+                        return {
+                          ...prev,
+                          name: newName,
+                          slug: isAutoSlugOrEmpty ? slugify(newName) : prev.slug
+                        };
+                      });
+                    }} 
+                  />
                 </div>
-                <p className="text-[9px] font-medium text-foreground-muted/60 mt-2 ml-2">Only lowercase letters, numbers, and hyphens permitted.</p>
               </div>
 
-              <div className="flex gap-3 pt-4">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-3 text-[11px] font-black text-foreground-muted uppercase tracking-widest bg-muted/50 rounded-2xl hover:bg-muted transition-colors">Cancel</button>
-                <button type="submit" disabled={isSubmitting} className="flex-1 py-3 text-[11px] font-black text-white uppercase tracking-widest bg-foreground rounded-2xl hover:bg-foreground/90 focus:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+              <div className="space-y-3">
+                <label className="block text-[10px] font-black text-foreground-muted uppercase tracking-[0.2em] ml-2">URL Routing Slug</label>
+                <div className="p-2 rounded-4xl border border-border-ios/20 bg-white flex items-stretch">
+                  <div className="w-16 flex items-center justify-center shrink-0">
+                    <span className="text-[13px] font-mono font-black text-foreground-muted/40 leading-none">/c/</span>
+                  </div>
+                  <input 
+                    required 
+                    type="text" 
+                    className="flex-1 bg-muted/20 rounded-3xl py-5 px-8 text-[14px] font-mono lowercase border-none focus:outline-none focus:ring-2 ring-accent/20 placeholder:text-foreground-muted/40 transition-all" 
+                    placeholder="aura-premium" 
+                    value={formData.slug} 
+                    onChange={e => setFormData({...formData, slug: slugify(e.target.value)})} 
+                  />
+                </div>
+                <p className="text-[9px] font-medium text-foreground-muted/40 mt-3 ml-2 tracking-tight">Only lowercase letters, numbers, and hyphens permitted.</p>
+              </div>
+
+              <div className="flex gap-4 pt-6">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4 text-[11px] font-black text-foreground-muted uppercase tracking-widest bg-transparent hover:bg-muted/30 rounded-full transition-colors cursor-pointer">Cancel</button>
+                <button type="submit" disabled={isSubmitting} className="flex-1 py-4 text-[11px] font-black text-white uppercase tracking-widest bg-[#1c1c1e] rounded-full hover:bg-black focus:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2 shadow-xl shadow-black/10">
                   {isSubmitting ? 'Provisioning...' : 'Deploy Tenant'}
                 </button>
               </div>
@@ -310,24 +366,40 @@ export default function SuperAdminDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 text-left">
           <div className="lg:col-span-2 card-luxury overflow-hidden">
             <div className="divide-y divide-border-ios/10">
-              {[
-                { event: 'New Clinic Joined', detail: 'Aura Premium Clinic', time: '2 hours ago', icon: '✨', color: 'text-accent' },
-                { event: 'Limit Reached', detail: 'Grace Dental (500 appts)', time: '5 hours ago', icon: '⚠️', color: 'text-amber-500' },
-                { event: 'Payment Success', detail: 'Subscription Renewal - Zen Spa', time: 'Yesterday', icon: '💳', color: 'text-green-500' },
-                { event: 'System Update', detail: 'v2.4.0 Deployed Successfully', time: '2 days ago', icon: '🚀', color: 'text-blue-500' },
-              ].map((item, i) => (
-                <div key={i} className="px-8 py-6 flex items-center justify-between hover:bg-muted/30 transition-colors">
-                  <div className="flex items-center gap-4">
-                    <span className="text-2xl">{item.icon}</span>
-                    <div>
-                      <p className="text-[13px] font-black text-foreground uppercase tracking-widest">{item.event}</p>
-                      <p className="text-[11px] text-foreground-muted font-medium mt-0.5">{item.detail}</p>
+              {loadingActivities ? (
+                <div className="px-8 py-12 text-center text-foreground-muted text-[11px] font-bold uppercase tracking-widest animate-pulse">Loading Logs...</div>
+              ) : activities.length === 0 ? (
+                <div className="px-8 py-12 text-center text-foreground-muted text-[11px] font-bold uppercase tracking-widest italic opacity-50">No recent activity</div>
+              ) : (
+                activities.map((log) => {
+                  let config = { title: 'System Event', icon: Activity, color: 'text-foreground-muted', bg: 'bg-muted/30', shadow: 'shadow-muted/20' };
+                  if (log.eventType === 'tenant_created') config = { title: 'New Tenant Provisioned', icon: Sparkles, color: 'text-accent', bg: 'bg-accent/10', shadow: 'shadow-accent/20' };
+                  else if (log.eventType === 'tenant_suspended') config = { title: 'Tenant Suspended', icon: ShieldAlert, color: 'text-red-500', bg: 'bg-red-500/10', shadow: 'shadow-red-500/20' };
+                  else if (log.eventType === 'tenant_activated') config = { title: 'Tenant Activated', icon: Shield, color: 'text-green-500', bg: 'bg-green-500/10', shadow: 'shadow-green-500/20' };
+                  
+                  return (
+                    <div key={log.id} className="px-8 py-6 flex items-center justify-between hover:bg-muted/30 transition-colors">
+                      <div className="flex items-center gap-5">
+                        <div className={cn(
+                          "w-12 h-12 rounded-2xl flex items-center justify-center transition-all shadow-lg",
+                          config.bg, config.shadow
+                        )}>
+                          <config.icon className={cn("w-6 h-6", config.color)} />
+                        </div>
+                        <div>
+                          <p className="text-[13px] font-black text-foreground uppercase tracking-widest">{config.title}</p>
+                          <p className="text-[11px] text-foreground-muted font-medium mt-0.5">{log.summary}</p>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-black text-foreground-muted/40 uppercase tracking-widest text-right">
+                        {formatDistanceToNow(new Date(log.createdAt), { addSuffix: true })}
+                      </span>
                     </div>
-                  </div>
-                  <span className="text-[10px] font-black text-foreground-muted/40 uppercase tracking-widest">{item.time}</span>
-                </div>
-              ))}
+                  );
+                })
+              )}
             </div>
+            {/* TODO: Implement full audit log view at /superadmin/activity */}
             <button className="w-full py-4 bg-muted/20 text-[10px] font-black text-foreground-muted uppercase tracking-widest hover:bg-muted/40 transition-colors">View All Audit Logs</button>
           </div>
 

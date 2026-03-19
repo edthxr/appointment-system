@@ -143,3 +143,22 @@ export const businessHoursRelations = relations(businessHours, ({ one }) => ({
 export const blockedSlotsRelations = relations(blockedSlots, ({ one }) => ({
   clinic: one(clinics, { fields: [blockedSlots.clinicId], references: [clinics.id] }),
 }));
+
+export const platformAuditLogs = pgTable('platform_audit_logs', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  eventType: text('event_type').notNull(),
+  actorUserId: uuid('actor_user_id'),
+  actorRole: text('actor_role'),
+  clinicId: uuid('clinic_id'),
+  entityType: text('entity_type').notNull(),
+  entityId: text('entity_id'),
+  action: text('action').notNull(),
+  summary: text('summary').notNull(),
+  metadata: text('metadata'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const platformAuditLogsRelations = relations(platformAuditLogs, ({ one }) => ({
+  actorUser: one(users, { fields: [platformAuditLogs.actorUserId], references: [users.id] }),
+  clinic: one(clinics, { fields: [platformAuditLogs.clinicId], references: [clinics.id] }),
+}));

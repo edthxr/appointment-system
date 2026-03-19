@@ -4,6 +4,7 @@ import { registry } from '@/lib/registry';
 import { ServiceService } from '@/modules/services/service';
 import { getSession } from '@/lib/session';
 import { ROLES } from '@/lib/constants';
+import { logPlatformActivity } from '@/lib/audit-logger';
 
 import { getClinicBySlug } from '@/lib/tenant';
 
@@ -59,6 +60,18 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const service = await serviceService.createService(body);
+
+    await logPlatformActivity({
+      eventType: 'service_created',
+      actorUserId: session.id,
+      actorRole: session.role,
+      clinicId: body.clinicId,
+      entityType: 'service',
+      entityId: service.id,
+      action: 'create',
+      summary: `Created service: ${service.name}`,
+    });
+
     return apiResponse.success(service, 'เพิ่มบริการสำเร็จ', 201);
   } catch (error: any) {
     return apiResponse.error(error.message || 'ไม่สามารถเพิ่มบริการได้', 400);

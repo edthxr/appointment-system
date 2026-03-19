@@ -5,6 +5,7 @@ import { ServiceService } from '@/modules/services/service';
 import { getSession } from '@/lib/session';
 import { ROLES } from '@/lib/constants';
 import { getClinicBySlug } from '@/lib/tenant';
+import { logPlatformActivity } from '@/lib/audit-logger';
 
 const serviceService = new ServiceService(registry.serviceRepo);
 
@@ -41,6 +42,18 @@ export async function PATCH(
 
     const body = await req.json();
     const service = await serviceService.updateService(id, clinicId, body);
+
+    await logPlatformActivity({
+      eventType: 'service_updated',
+      actorUserId: session.id,
+      actorRole: session.role,
+      clinicId: clinicId,
+      entityType: 'service',
+      entityId: id,
+      action: 'update',
+      summary: `Updated service: ${service.name}`,
+    });
+
     return apiResponse.success(service, 'อัปเดตบริการสำเร็จ', 200);
   } catch (error: any) {
     return apiResponse.error(error.message || 'ไม่สามารถอัปเดตบริการได้', 400);
@@ -79,6 +92,18 @@ export async function DELETE(
     }
 
     await serviceService.deleteService(id, clinicId);
+
+    await logPlatformActivity({
+      eventType: 'service_deleted',
+      actorUserId: session.id,
+      actorRole: session.role,
+      clinicId: clinicId,
+      entityType: 'service',
+      entityId: id,
+      action: 'delete',
+      summary: `Deleted service`,
+    });
+
     return apiResponse.success(null, 'ลบบริการสำเร็จ', 200);
   } catch (error: any) {
     return apiResponse.error(error.message || 'ไม่สามารถลบบริการได้', 400);

@@ -4,6 +4,7 @@ import { clinics } from '@/db/schema';
 import { checkRole } from '@/lib/guards';
 import { ROLES } from '@/lib/constants';
 import { eq } from 'drizzle-orm';
+import { logPlatformActivity } from '@/lib/audit-logger';
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   try {
@@ -18,6 +19,17 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     }
 
     await db!.update(clinics).set({ isActive, updatedAt: new Date() }).where(eq(clinics.id, params.id));
+
+    await logPlatformActivity({
+      eventType: isActive ? 'tenant_activated' : 'tenant_suspended',
+      actorUserId: session.id,
+      actorRole: 'super_admin',
+      clinicId: params.id,
+      entityType: 'clinic',
+      entityId: params.id,
+      action: isActive ? 'activate' : 'suspend',
+      summary: `${isActive ? 'Activated' : 'Suspended'} tenant`,
+    });
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

@@ -4,6 +4,7 @@ import { BookingService } from '@/modules/bookings/service';
 import { registry } from '@/lib/registry';
 import { getSession } from '@/lib/session';
 import { ROLES } from '@/lib/constants';
+import { logPlatformActivity } from '@/lib/audit-logger';
 
 import { getClinicBySlug } from '@/lib/tenant';
 
@@ -48,6 +49,17 @@ export async function PATCH(
         ROLES.ADMIN
       ].includes(session.role as any)
     );
+
+    await logPlatformActivity({
+      eventType: 'booking_updated',
+      actorUserId: session.id,
+      actorRole: session.role,
+      clinicId: clinic.id,
+      entityType: 'booking',
+      entityId: id,
+      action: 'update',
+      summary: `Updated booking status to ${status}`,
+    });
 
     return apiResponse.success(updated, 'อัปเดตสถานะสำเร็จ');
   } catch (error: any) {

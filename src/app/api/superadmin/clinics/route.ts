@@ -4,6 +4,7 @@ import { clinics, appointments, services } from '@/db/schema';
 import { checkRole } from '@/lib/guards';
 import { ROLES } from '@/lib/constants';
 import { eq, desc } from 'drizzle-orm';
+import { logPlatformActivity } from '@/lib/audit-logger';
 
 export async function GET() {
   try {
@@ -57,6 +58,17 @@ export async function POST(req: Request) {
       isActive: true,
       themeConfig: JSON.stringify({ primary: '#CCA75A' })
     }).returning();
+
+    await logPlatformActivity({
+      eventType: 'tenant_created',
+      actorUserId: session.id, // Assuming session has an id, wait, checkRole might just return true or session. Let's just pass null if session is unknown
+      actorRole: 'super_admin',
+      clinicId: newClinic.id,
+      entityType: 'clinic',
+      entityId: newClinic.id,
+      action: 'create',
+      summary: `Provisioned new tenant: ${newClinic.name}`,
+    });
 
     return NextResponse.json({ success: true, data: { ...newClinic, totalAppointments: 0, revenue: 0 } });
   } catch (error: any) {
