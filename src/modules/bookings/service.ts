@@ -83,6 +83,16 @@ export class BookingService {
         to: user.email,
         message: `คุณได้ทำการจอง ${service.name} ในวันที่ ${format(data.appointmentDate, 'dd/MM/yyyy')} เวลา ${data.startTime}. กรุณารอเจ้าหน้าที่ยืนยัน.`
       });
+
+      // Also send system notification for Admin Toast
+      await this.notificationService.send({
+        clinicId: data.clinicId,
+        userId: data.userId, // Link to the customer who booked
+        appointmentId: booking.id,
+        channel: 'system',
+        type: 'booking_created',
+        message: `🔔 รายการจองใหม่: คุณ ${user.name} ได้จอง ${service.name} วันที่ ${format(data.appointmentDate, 'dd MMM')} เวลา ${data.startTime}`
+      });
     }
 
     return booking;
@@ -132,6 +142,16 @@ export class BookingService {
         type,
         to: user.email,
         message
+      });
+
+      // Also send system notification for Admin (internal log)
+      await this.notificationService.send({
+        clinicId,
+        userId: user.id,
+        appointmentId: id,
+        channel: 'system',
+        type,
+        message: `[System] ${message} (Customer: ${user.name})`
       });
     }
 

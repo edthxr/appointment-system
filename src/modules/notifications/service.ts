@@ -4,10 +4,12 @@ export interface Notification {
   id: string;
   userId: string;
   appointmentId?: string | null;
-  channel: 'email' | 'line';
+  channel: 'email' | 'line' | 'system';
   type: 'booking_created' | 'booking_confirmed' | 'booking_cancelled' | 'reminder';
   message: string;
   status: 'pending' | 'sent' | 'failed';
+  isRead: boolean;
+  readAt?: Date | null;
   sentAt?: Date | null;
   createdAt: Date;
   clinicId: string;
@@ -32,6 +34,14 @@ export class NotificationService {
       ...data,
       status: 'pending'
     });
+
+    if (data.channel === 'system') {
+      await this.notificationRepo.update(notif.id, {
+        status: 'sent',
+        sentAt: new Date()
+      });
+      return { success: true };
+    }
 
     if (!provider) {
       console.warn(`[Notification] No provider registered for channel: ${data.channel}`);

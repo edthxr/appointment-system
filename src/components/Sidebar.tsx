@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Role } from '@/lib/constants';
+import { useNotifications } from '@/providers/NotificationProvider';
+
 
 type SidebarProps = {
   user?: { name: string; email?: string; role: Role } | null;
@@ -22,6 +24,8 @@ export function Sidebar({ user, clinic }: SidebarProps) {
   const isSuperAdmin = role === 'super_admin';
   const isClinicAdmin = role === 'admin' || role === 'clinic_owner' || role === 'clinic_admin';
   const isStaff = role === 'clinic_staff';
+  
+  const { unreadCount } = useNotifications();
   
   if (!user || (!isSuperAdmin && !isClinicAdmin && !isStaff)) return null;
 
@@ -196,8 +200,15 @@ export function Sidebar({ user, clinic }: SidebarProps) {
                   : "text-foreground-muted hover:bg-muted/50 hover:text-foreground"
               )}
             >
-              <div className="flex items-center gap-4">
-                <span className="text-xl">{link.icon}</span>
+              <div className="flex items-center gap-4 relative">
+                <span className="text-xl relative">
+                  {link.icon}
+                  {link.label === 'การแจ้งเตือน' && unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-black text-white shadow-sm ring-2 ring-white animate-in zoom-in duration-300">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </span>
                 {!isCollapsed && <span className="text-[12px] font-bold uppercase tracking-widest">{link.label}</span>}
               </div>
             </Link>

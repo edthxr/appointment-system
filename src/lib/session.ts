@@ -8,6 +8,7 @@ export type SessionUser = {
   name: string;
   email: string;
   role: Role;
+  clinicId?: string;
 };
 
 export async function getSession(): Promise<SessionUser | null> {

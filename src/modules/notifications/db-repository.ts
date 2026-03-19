@@ -78,4 +78,20 @@ export class DbNotificationRepository implements INotificationRepository {
       totalPages: Math.ceil(total / limit),
     };
   }
+
+  async markAsRead(id: string): Promise<void> {
+    if (!db) throw new Error('Database not connected');
+    await db.update(notifications).set({ isRead: true, readAt: new Date() }).where(eq(notifications.id, id));
+  }
+
+  async markAllAsRead(clinicId: string): Promise<void> {
+    if (!db) throw new Error('Database not connected');
+    await db.update(notifications).set({ isRead: true, readAt: new Date() }).where(eq(notifications.clinicId, clinicId));
+  }
+
+  async getUnreadCount(clinicId: string): Promise<number> {
+    if (!db) throw new Error('Database not connected');
+    const [result] = await db.select({ count: count() }).from(notifications).where(and(eq(notifications.clinicId, clinicId), eq(notifications.isRead, false)));
+    return Number(result?.count || 0);
+  }
 }

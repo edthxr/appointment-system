@@ -1,11 +1,14 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, Suspense } from 'react';
 import { format } from 'date-fns';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Pagination from '@/components/Pagination';
 import DataTable, { Column } from '@/components/DataTable';
+import { cn } from '@/lib/utils';
 
-export default function AdminAppointmentsPage() {
+
+function AppointmentsContent() {
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -15,6 +18,15 @@ export default function AdminAppointmentsPage() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [sortBy, setSortBy] = useState<string>('appointmentDate');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  
+  // Detail Drawer State
+  const [selectedAppointment, setSelectedAppointment] = useState<any | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const bookingIdParam = searchParams.get('bookingId');
+
 
   const clinicSlug = 'aura-premium';
 
@@ -46,6 +58,41 @@ export default function AdminAppointmentsPage() {
   useEffect(() => {
     fetchAppointments();
   }, [fetchAppointments]);
+
+  // Handle deep-linking
+  useEffect(() => {
+    if (bookingIdParam) {
+      const found = appointments.find(a => a.id === bookingIdParam);
+      if (found) {
+        setSelectedAppointment(found);
+        setIsDrawerOpen(true);
+      } else {
+        // If not in current page, we might need a separate fetch for just one booking
+        const fetchOne = async () => {
+          try {
+            const res = await fetch(`/api/bookings/${bookingIdParam}?clinicSlug=${clinicSlug}`);
+            const data = await res.json();
+            if (data.success) {
+              setSelectedAppointment(data.data);
+              setIsDrawerOpen(true);
+            }
+          } catch (err) {
+            console.error('Failed to fetch specific booking:', err);
+          }
+        };
+        fetchOne();
+      }
+    }
+  }, [bookingIdParam, appointments, clinicSlug]);
+
+  const closeDrawer = () => {
+    setIsDrawerOpen(false);
+    // Remove query param without refreshing
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete('bookingId');
+    router.replace(`/admin/appointments?${params.toString()}`);
+  };
+
 
   const handleUpdateStatus = async (id: string, status: string) => {
     try {
@@ -126,6 +173,15 @@ export default function AdminAppointmentsPage() {
       className: 'text-right',
       cell: (a) => (
         <div className="flex justify-end gap-6">
+          <button 
+            onClick={() => {
+              setSelectedAppointment(a);
+              setIsDrawerOpen(true);
+            }}
+            className="text-[10px] font-black text-accent hover:text-foreground uppercase tracking-widest transition-all hover:scale-110"
+          >
+            Details
+          </button>
           {a.status === 'pending' && (
             <button 
               onClick={() => handleUpdateStatus(a.id, 'confirmed')}
@@ -212,6 +268,106 @@ export default function AdminAppointmentsPage() {
           }}
         />
       </div>
+
+      {/* Appointment Detail Drawer */}
+      {isDrawerOpen && selectedAppointment && (
+        <div className="fixed inset-0 z-[100] flex justify-end">
+          <div className="fixed inset-0 bg-black/20 backdrop-blur-sm animate-in fade-in duration-300" onClick={closeDrawer} />
+          <div className="relative w-full max-w-lg bg-white h-full shadow-2xl animate-in slide-in-from-right duration-500 overflow-y-auto">
+            <div className="p-8">
+              <div className="flex justify-between items-center mb-10">
+                <button onClick={closeDrawer} className="p-2 -ml-2 text-foreground-muted hover:text-foreground transition-colors group">
+                  <svg className="w-6 h-6 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                </button>
+                <div className={cn(
+                  "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border",
+                  selectedAppointment.status === 'confirmed' ? 'bg-green-50 text-green-600 border-green-100' : 
+                  selectedAppointment.status === 'cancelled' ? 'bg-red-50 text-red-600 border-red-100' : 
+                  'bg-yellow-50 text-yellow-600 border-yellow-100'
+                )}>
+                  {selectedAppointment.status}
+                </div>
+              </div>
+
+              <div className="space-y-12">
+                <section>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-accent mb-4">Patient Information</p>
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="w-14 h-14 rounded-2xl bg-foreground text-white flex items-center justify-center text-xl font-black">
+                      {selectedAppointment.user?.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-black text-foreground">{selectedAppointment.user?.name}</h2>
+                      <p className="text-sm text-foreground-muted">{selectedAppointment.user?.email}</p>
+                    </div>
+                  </div>
+                </section>
+
+                <section className="grid grid-cols-2 gap-8">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-accent mb-2">Service</p>
+                    <p className="text-sm font-bold text-foreground">{selectedAppointment.service?.name}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-accent mb-2">Duration</p>
+                    <p className="text-sm font-bold text-foreground">{selectedAppointment.service?.durationMin} mins</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-accent mb-2">Date</p>
+                    <p className="text-sm font-bold text-foreground">{format(new Date(selectedAppointment.appointmentDate), 'EEEE, dd MMM yyyy')}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-accent mb-2">Time Slot</p>
+                    <p className="text-sm font-bold text-foreground">{selectedAppointment.startTime} – {selectedAppointment.endTime}</p>
+                  </div>
+                </section>
+
+                <section>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-accent mb-2">Notes from Patient</p>
+                  <div className="bg-muted/50 p-6 rounded-3xl border border-border-ios/50">
+                    <p className="text-sm text-foreground italic leading-relaxed">
+                      {selectedAppointment.note || "No additional notes provided."}
+                    </p>
+                  </div>
+                </section>
+
+                <section className="pt-12 border-t border-border-ios/30 flex gap-4">
+                  {selectedAppointment.status === 'pending' && (
+                    <button 
+                      onClick={() => handleUpdateStatus(selectedAppointment.id, 'confirmed')}
+                      className="flex-1 bg-foreground text-white py-4 rounded-2xl text-[12px] font-black uppercase tracking-widest hover:bg-foreground/80 transition-all shadow-xl shadow-foreground/20 active:scale-95"
+                    >
+                      Verify Appointment
+                    </button>
+                  )}
+                  {selectedAppointment.status !== 'cancelled' && (
+                    <button 
+                      onClick={() => handleUpdateStatus(selectedAppointment.id, 'cancelled')}
+                      className="flex-1 border border-border-ios py-4 rounded-2xl text-[12px] font-black uppercase tracking-widest hover:bg-red-50 hover:text-red-600 hover:border-red-100 transition-all active:scale-95"
+                    >
+                      Void Appointment
+                    </button>
+                  )}
+                </section>
+
+                <p className="text-center text-[9px] font-bold text-foreground-muted uppercase tracking-widest">
+                  Booking ID: {selectedAppointment.id}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
+// Wrapping with Suspense for useSearchParams
+export default function AdminAppointmentsPage() {
+  return (
+    <Suspense fallback={<div>Loading appointments...</div>}>
+      <AppointmentsContent />
+    </Suspense>
+  );
+}
+

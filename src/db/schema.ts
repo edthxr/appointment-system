@@ -72,6 +72,8 @@ export const notifications = pgTable('notifications', {
   type: text('type', { enum: ['booking_created', 'booking_confirmed', 'booking_cancelled', 'reminder'] }).notNull(),
   message: text('message').notNull(),
   status: text('status', { enum: ['pending', 'sent', 'failed'] }).default('pending').notNull(),
+  isRead: boolean('is_read').default(false).notNull(),
+  readAt: timestamp('read_at'),
   sentAt: timestamp('sent_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });

@@ -6,6 +6,9 @@ export interface INotificationRepository {
   update(id: string, data: Partial<Notification>): Promise<Notification>;
   findByUserId(userId: string, clinicId: string, page?: number, limit?: number): Promise<PaginatedResult<Notification>>;
   findAll(clinicId: string, page?: number, limit?: number): Promise<PaginatedResult<Notification>>;
+  markAsRead(id: string): Promise<void>;
+  markAllAsRead(clinicId: string): Promise<void>;
+  getUnreadCount(clinicId: string): Promise<number>;
 }
 
 export class MockNotificationRepository implements INotificationRepository {
@@ -21,6 +24,7 @@ export class MockNotificationRepository implements INotificationRepository {
       type: data.type || 'booking_created',
       message: data.message || '',
       status: 'pending',
+      isRead: false,
       createdAt: new Date(),
     };
     this.notifications.push(newNotif);
@@ -62,5 +66,26 @@ export class MockNotificationRepository implements INotificationRepository {
       limit,
       totalPages: Math.ceil(filtered.length / limit),
     };
+  }
+
+  async markAsRead(id: string): Promise<void> {
+    const notif = this.notifications.find(n => n.id === id);
+    if (notif) {
+      notif.isRead = true;
+      notif.readAt = new Date();
+    }
+  }
+
+  async markAllAsRead(clinicId: string): Promise<void> {
+    this.notifications.forEach(n => {
+      if (n.clinicId === clinicId) {
+        n.isRead = true;
+        n.readAt = new Date();
+      }
+    });
+  }
+
+  async getUnreadCount(clinicId: string): Promise<number> {
+    return this.notifications.filter(n => n.clinicId === clinicId && !n.isRead).length;
   }
 }
