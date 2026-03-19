@@ -41,3 +41,5 @@ yarn-error.log*
 next-env.d.ts
 # Detailed database documentation
 /src/db/SCHEMA_DOCS.md
+/src/db/PRICING_PLAN.md
+
