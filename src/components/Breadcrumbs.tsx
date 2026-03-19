@@ -10,13 +10,25 @@ export function Breadcrumbs() {
 
   if (paths.length === 0) return null;
 
+  const pathLabels: Record<string, string> = {
+    'admin': 'Management',
+    'superadmin': 'Platform',
+    'dashboard': 'Overview',
+    'clinics': 'Healthcare Centers',
+    'services': 'Services',
+    'bookings': 'Appointments',
+    'profile': 'My Profile',
+    'settings': 'Settings',
+  };
+
   return (
     <nav className="flex items-center gap-2 mb-8 text-[11px] font-black uppercase tracking-widest text-foreground-muted/60">
       <Link href="/" className="hover:text-accent transition-colors">Home</Link>
       {paths.map((path, idx) => {
         const href = `/${paths.slice(0, idx + 1).join('/')}`;
         const isLast = idx === paths.length - 1;
-        const label = path.replace(/-/g, ' ');
+        const rawLabel = path.replace(/-/g, ' ');
+        const label = pathLabels[path.toLowerCase()] || rawLabel;
 
         return (
           <div key={idx} className="flex items-center gap-2">

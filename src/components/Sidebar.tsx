@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { Role } from '@/lib/constants';
 
 type SidebarProps = {
-  user?: { name: string; role: Role } | null;
+  user?: { name: string; email?: string; role: Role } | null;
   clinic?: { name: string; slug: string } | null;
 };
 
@@ -91,7 +91,7 @@ export function Sidebar({ user, clinic }: SidebarProps) {
               {isSuperAdmin ? 'QueueFlow' : clinic?.name || 'Aura Clinic'}
             </span>
             <span className="text-[9px] font-black uppercase tracking-[0.2em] text-accent truncate">
-              {isSuperAdmin ? 'Platform Admin' : 'Management Portal'}
+              {isSuperAdmin ? 'Platform Admin' : 'Clinic Management'}
             </span>
           </div>
           
@@ -205,21 +205,41 @@ export function Sidebar({ user, clinic }: SidebarProps) {
         })}
       </div>
 
-      <div className="p-4 border-t border-border-ios/30 shrink-0">
+      <div className="p-4 border-t border-border-ios/30 shrink-0 flex flex-col gap-1">
+        {/* Luxury User Profile Anchor */}
+        {user && (
+          <div className={cn(
+            "flex items-center gap-3 px-3 py-3 rounded-2xl transition-all cursor-default group hover:bg-muted/40",
+            isCollapsed ? "justify-center px-0" : ""
+          )}>
+            <div className="w-8 h-8 rounded-full bg-foreground text-white flex items-center justify-center text-[11px] font-black shrink-0 shadow-md">
+              {user.name.charAt(0).toUpperCase()}
+            </div>
+            {!isCollapsed && (
+              <div className="flex flex-col truncate">
+                <span className="text-[12px] font-bold text-foreground truncate">{user.name}</span>
+                <span className="text-[10px] text-foreground-muted truncate">
+                  {user.email || user.role.replace('_', ' ')}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
         <button 
           onClick={async () => {
              await fetch('/api/auth', { method: 'DELETE' });
              window.location.href = '/login';
           }}
           className={cn(
-            "w-full flex items-center rounded-2xl transition-all text-red-500 hover:bg-red-500/10",
-            isCollapsed ? "justify-center h-12 px-0" : "px-4 py-3 gap-4"
+            "w-full flex items-center rounded-2xl transition-all text-red-500 hover:bg-red-500/10 hover:text-red-600",
+            isCollapsed ? "justify-center h-12 px-0" : "px-3 py-3 gap-3"
           )}
         >
           <span className="text-xl">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
           </span>
-          {!isCollapsed && <span className="text-[12px] font-black uppercase tracking-widest">ออกจากระบบ</span>}
+          {!isCollapsed && <span className="text-[11px] font-black uppercase tracking-widest">ออกจากระบบ</span>}
         </button>
       </div>
       </aside>
