@@ -3,8 +3,10 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslation } from '@/providers/LanguageProvider';
 
 export default function LoginPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -35,11 +37,10 @@ export default function LoginPage() {
         }
         router.refresh(); 
       } else {
-        setError(data.error || 'ล็อกอินไม่สำเร็จ');
+        setError(data.error || t('auth.error_failed'));
       }
     } catch (err) {
-      setError('เกิดข้อผิดพลาดในการเชื่อมต่อ');
-      setError('Connection error');
+      setError(t('booking.error_connection'));
     } finally {
       setLoading(false);
     }
@@ -49,11 +50,11 @@ export default function LoginPage() {
     <div className="min-h-[80vh] flex items-center justify-center py-20 px-6">
       <div className="card-luxury w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-700">
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-display font-black tracking-tighter text-foreground mb-3">
-            Aura <span className="font-light text-foreground-muted">Clinic</span>
+          <h1 className="text-4xl font-display font-black tracking-tighter text-foreground mb-3 uppercase">
+            {t('auth.login_title')}
           </h1>
           <p className="text-[13px] font-bold uppercase tracking-widest text-foreground-muted">
-            Management Portal
+            {t('auth.management_portal')}
           </p>
         </div>
 
@@ -65,7 +66,7 @@ export default function LoginPage() {
 
         <form onSubmit={handleLogin} className="space-y-6">
           <div>
-            <label className="block text-[11px] font-black text-foreground-muted uppercase tracking-widest mb-2 ml-1">Email Address</label>
+            <label className="block text-[11px] font-black text-foreground-muted uppercase tracking-widest mb-2 ml-1">{t('auth.email_label')}</label>
             <input
               type="email"
               required
@@ -77,7 +78,7 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label className="block text-[11px] font-black text-foreground-muted uppercase tracking-widest mb-2 ml-1">Password</label>
+            <label className="block text-[11px] font-black text-foreground-muted uppercase tracking-widest mb-2 ml-1">{t('auth.password_label')}</label>
             <input
               type="password"
               required
@@ -93,13 +94,13 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full bg-foreground text-white py-4 rounded-full font-black uppercase text-[12px] tracking-widest hover:bg-foreground/90 transition-all shadow-lg active:scale-95 disabled:opacity-50 mt-4"
           >
-            {loading ? 'Processing...' : 'Sign In'}
+            {loading ? t('auth.processing') : t('auth.sign_in')}
           </button>
         </form>
 
         <div className="mt-10 pt-8 border-t border-border-ios text-center space-y-3">
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground-muted/50 transition-opacity hover:opacity-100 italic">
-            Demo Access
+            {t('auth.demo_access')}
           </p>
           <div className="text-[11px] font-bold text-foreground-muted/70 flex flex-col gap-1">
             <span>Owner: owner@example.com / owner123</span>
@@ -110,9 +111,9 @@ export default function LoginPage() {
         </div>
 
         <p className="mt-10 text-center text-[12px] font-bold text-foreground-muted">
-          Don't have an account?{' '}
+          {t('auth.no_account')}{' '}
           <Link href="/register" className="text-accent hover:underline">
-            Register here
+            {t('auth.register_here')}
           </Link>
         </p>
       </div>

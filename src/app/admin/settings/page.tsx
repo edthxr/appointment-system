@@ -2,8 +2,10 @@ import { redirect } from 'next/navigation';
 import { resolveActiveClinic } from '@/lib/clinic-resolver';
 import { registry } from '@/lib/registry';
 import ClinicSettingsForm from '@/modules/settings/components/ClinicSettingsForm';
+import { getTranslation } from '@/lib/i18n-server';
 
 export default async function AdminSettingsPage() {
+  const { t } = await getTranslation();
   const activeClinic = await resolveActiveClinic();
   
   if (!activeClinic) {
@@ -20,8 +22,8 @@ export default async function AdminSettingsPage() {
   if (!clinic) {
     return (
       <div className="py-20 text-center">
-        <h2 className="text-2xl font-display font-black text-foreground">Clinic Registry Error</h2>
-        <p className="text-foreground-muted mt-2">Could not locate the operational record for this clinic.</p>
+        <h2 className="text-2xl font-display font-black text-foreground">{t('settings.error_title')}</h2>
+        <p className="text-foreground-muted mt-2">{t('settings.error_desc')}</p>
       </div>
     );
   }
@@ -29,8 +31,8 @@ export default async function AdminSettingsPage() {
   return (
     <div className="max-w-4xl pb-20">
       <div className="mb-12 animate-in fade-in slide-in-from-left-4 duration-1000">
-        <h1 className="text-5xl font-display font-black text-foreground tracking-tighter mb-2">Clinical Protocol</h1>
-        <p className="text-[13px] font-black text-accent uppercase tracking-[0.3em]">Operational Configuration & Branding</p>
+        <h1 className="text-5xl font-display font-black text-foreground tracking-tighter mb-2">{t('settings.title')}</h1>
+        <p className="text-[13px] font-black text-accent uppercase tracking-[0.3em]">{t('settings.subtitle')}</p>
       </div>
 
       <ClinicSettingsForm 

@@ -2,12 +2,14 @@
 
 import { useState } from 'react';
 import { User } from '@/modules/auth/types';
+import { useTranslation } from '@/providers/LanguageProvider';
 
 interface ProfileFormProps {
   user: User;
 }
 
 export function ProfileForm({ user: initialUser }: ProfileFormProps) {
+  const { t } = useTranslation();
   const [user, setUser] = useState(initialUser);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -28,12 +30,12 @@ export function ProfileForm({ user: initialUser }: ProfileFormProps) {
       });
       const data = await res.json();
       if (data.success) {
-        setMessage({ type: 'success', text: 'อัปเดตข้อมูลส่วนตัวสำเร็จ' });
+        setMessage({ type: 'success', text: t('profile.update_success') });
       } else {
-        setMessage({ type: 'error', text: data.error || 'เกิดข้อผิดพลาด' });
+        setMessage({ type: 'error', text: data.error || t('common.error') });
       }
     } catch (err) {
-      setMessage({ type: 'error', text: 'ไม่สามารถติดต่อเซิร์ฟเวอร์ได้' });
+      setMessage({ type: 'error', text: t('profile.connection_error') });
     } finally {
       setLoading(false);
     }
@@ -42,7 +44,7 @@ export function ProfileForm({ user: initialUser }: ProfileFormProps) {
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
-      setMessage({ type: 'error', text: 'รหัสผ่านใหม่ไม่ตรงกัน' });
+      setMessage({ type: 'error', text: t('profile.password_mismatch') });
       return;
     }
 
@@ -57,15 +59,15 @@ export function ProfileForm({ user: initialUser }: ProfileFormProps) {
       });
       const data = await res.json();
       if (data.success) {
-        setMessage({ type: 'success', text: 'เปลี่ยนรหัสผ่านสำเร็จ' });
+        setMessage({ type: 'success', text: t('profile.password_success') });
         setCurrentPassword('');
         setNewPassword('');
         setConfirmPassword('');
       } else {
-        setMessage({ type: 'error', text: data.error || 'เกิดข้อผิดพลาด' });
+        setMessage({ type: 'error', text: data.error || t('common.error') });
       }
     } catch (err) {
-      setMessage({ type: 'error', text: 'ไม่สามารถติดต่อเซิร์ฟเวอร์ได้' });
+      setMessage({ type: 'error', text: t('profile.connection_error') });
     } finally {
       setLoading(false);
     }
@@ -83,11 +85,11 @@ export function ProfileForm({ user: initialUser }: ProfileFormProps) {
 
       {/* General Information */}
       <section className="card-luxury p-10 border-border-ios/40">
-        <h2 className="text-xl font-display font-black mb-8 text-foreground uppercase tracking-widest">General Identity</h2>
+        <h2 className="text-xl font-display font-black mb-8 text-foreground uppercase tracking-widest">{t('profile.general_identity')}</h2>
         <form onSubmit={handleUpdateProfile} className="space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-3">
-              <label className="text-[10px] font-black text-foreground-muted uppercase tracking-[0.2em]">Full Name</label>
+              <label className="text-[10px] font-black text-foreground-muted uppercase tracking-[0.2em]">{t('profile.label_name')}</label>
               <input
                 type="text"
                 value={user.name}
@@ -97,7 +99,7 @@ export function ProfileForm({ user: initialUser }: ProfileFormProps) {
               />
             </div>
             <div className="space-y-3">
-              <label className="text-[10px] font-black text-foreground-muted uppercase tracking-[0.2em]">Email Address</label>
+              <label className="text-[10px] font-black text-foreground-muted uppercase tracking-[0.2em]">{t('profile.label_email')}</label>
               <input
                 type="email"
                 value={user.email}
@@ -106,7 +108,7 @@ export function ProfileForm({ user: initialUser }: ProfileFormProps) {
               />
             </div>
             <div className="space-y-3">
-              <label className="text-[10px] font-black text-foreground-muted uppercase tracking-[0.2em]">Contact Phone</label>
+              <label className="text-[10px] font-black text-foreground-muted uppercase tracking-[0.2em]">{t('profile.label_phone')}</label>
               <input
                 type="text"
                 value={user.phone || ''}
@@ -121,7 +123,7 @@ export function ProfileForm({ user: initialUser }: ProfileFormProps) {
               disabled={loading}
               className="bg-foreground text-white px-10 py-4 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-xl hover:bg-accent hover:-translate-y-1 transition-all disabled:opacity-50"
             >
-              Update Credentials
+              {loading ? t('common.loading') : t('profile.update_btn')}
             </button>
           </div>
         </form>
@@ -129,11 +131,11 @@ export function ProfileForm({ user: initialUser }: ProfileFormProps) {
 
       {/* Security */}
       <section className="card-luxury p-10 border-border-ios/40 bg-accent/2">
-        <h2 className="text-xl font-display font-black mb-8 text-accent uppercase tracking-widest">Security Protocol</h2>
+        <h2 className="text-xl font-display font-black mb-8 text-accent uppercase tracking-widest">{t('profile.security_protocol')}</h2>
         <form onSubmit={handleChangePassword} className="space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="space-y-3">
-              <label className="text-[10px] font-black text-foreground-muted uppercase tracking-[0.2em]">Current Secret</label>
+              <label className="text-[10px] font-black text-foreground-muted uppercase tracking-[0.2em]">{t('profile.label_current_password')}</label>
               <input
                 type="password"
                 value={currentPassword}
@@ -143,7 +145,7 @@ export function ProfileForm({ user: initialUser }: ProfileFormProps) {
               />
             </div>
             <div className="space-y-3">
-              <label className="text-[10px] font-black text-foreground-muted uppercase tracking-[0.2em]">New Secret</label>
+              <label className="text-[10px] font-black text-foreground-muted uppercase tracking-[0.2em]">{t('profile.label_new_password')}</label>
               <input
                 type="password"
                 value={newPassword}
@@ -153,7 +155,7 @@ export function ProfileForm({ user: initialUser }: ProfileFormProps) {
               />
             </div>
             <div className="space-y-3">
-              <label className="text-[10px] font-black text-foreground-muted uppercase tracking-[0.2em]">Confirm New Secret</label>
+              <label className="text-[10px] font-black text-foreground-muted uppercase tracking-[0.2em]">{t('profile.label_confirm_password')}</label>
               <input
                 type="password"
                 value={confirmPassword}
@@ -168,7 +170,7 @@ export function ProfileForm({ user: initialUser }: ProfileFormProps) {
               disabled={loading}
               className="bg-accent text-white px-10 py-4 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-xl shadow-accent/20 hover:bg-foreground hover:-translate-y-1 transition-all disabled:opacity-50"
             >
-              Rotate Access Secret
+              {loading ? t('common.loading') : t('profile.change_password_btn')}
             </button>
           </div>
         </form>

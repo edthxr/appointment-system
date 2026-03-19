@@ -10,6 +10,8 @@ export const metadata: Metadata = {
   description: "จองบริการฉีดวิตามิน เลเซอร์ Botox และ HIFU กับแพทย์ผู้เชี่ยวชาญที่ Aura Clinic",
 };
 
+import { LanguageProvider } from "@/providers/LanguageProvider";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -18,7 +20,9 @@ export default function RootLayout({
   return (
     <html lang="th" className={`${inter.variable} ${outfit.variable}`}>
       <body className="antialiased font-sans bg-background text-foreground selection:bg-accent/10">
-        {children}
+        <LanguageProvider>
+          {children}
+        </LanguageProvider>
       </body>
     </html>
   );

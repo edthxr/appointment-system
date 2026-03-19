@@ -13,7 +13,10 @@ type SidebarProps = {
   clinic?: { name: string; slug: string } | null;
 };
 
+import { useTranslation } from '@/providers/LanguageProvider';
+
 export function Sidebar({ user, clinic }: SidebarProps) {
+  const { t } = useTranslation();
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -40,23 +43,23 @@ export function Sidebar({ user, clinic }: SidebarProps) {
   };
 
   const links = isSuperAdmin ? [
-    { href: '/superadmin/dashboard', label: 'Platform Dashboard', icon: icons.dashboard }
+    { href: '/superadmin/dashboard', label: t('sidebar.platform_dashboard'), icon: icons.dashboard }
   ] : [
-    { href: '/admin/dashboard', label: 'Dashboard', icon: icons.dashboard },
-    { href: '/admin/appointments', label: 'รายการนัดหมาย', icon: icons.appointments },
-    { href: '/admin/calendar', label: 'ปฏิทิน', icon: icons.calendar },
-    { href: '/admin/notifications', label: 'การแจ้งเตือน', icon: icons.notifications },
-    ...(isClinicAdmin ? [{ href: '/admin/services', label: 'จัดการบริการ', icon: icons.services }] : []),
+    { href: '/admin/dashboard', label: t('sidebar.dashboard'), icon: icons.dashboard },
+    { href: '/admin/appointments', label: t('sidebar.appointments'), icon: icons.appointments },
+    { href: '/admin/calendar', label: t('sidebar.calendar') || 'ปฏิทิน', icon: icons.calendar },
+    { href: '/admin/notifications', label: t('sidebar.notifications'), icon: icons.notifications },
+    ...(isClinicAdmin ? [{ href: '/admin/services', label: t('sidebar.services'), icon: icons.services }] : []),
     ...(isClinicAdmin ? [{ 
       href: '#', 
-      label: 'ตั้งค่า', 
+      label: t('sidebar.settings'), 
       icon: icons.settings,
       subLinks: [
-        { href: '/admin/settings', label: 'ข้อมูลคลินิก' },
-        { href: '/admin/settings/staff', label: 'จัดการบุคลากร' }
+        { href: '/admin/settings', label: t('sidebar.clinic_info') || 'ข้อมูลคลินิก' },
+        { href: '/admin/settings/staff', label: t('sidebar.staff_management') || 'จัดการบุคลากร' }
       ]
     }] : []),
-    { href: '/admin/profile', label: 'โปรไฟล์', icon: icons.profile },
+    { href: '/admin/profile', label: t('sidebar.profile') || 'โปรไฟล์', icon: icons.profile },
   ];
 
   return (
@@ -92,10 +95,10 @@ export function Sidebar({ user, clinic }: SidebarProps) {
         <div className="h-20 flex items-center justify-between px-6 border-b border-border-ios/30 sticky top-0 bg-white z-10 shrink-0">
           <div className={cn("flex flex-col truncate transition-opacity duration-300", isCollapsed && "lg:opacity-0")}>
             <span className="text-xl font-display font-black tracking-tighter text-foreground truncate">
-              {isSuperAdmin ? 'QueueFlow' : clinic?.name || 'Aura Clinic'}
+              {isSuperAdmin ? t('sidebar.queueflow') : clinic?.name || 'Aura Clinic'}
             </span>
             <span className="text-[9px] font-black uppercase tracking-[0.2em] text-accent truncate">
-              {isSuperAdmin ? 'Platform Admin' : 'Clinic Management'}
+              {isSuperAdmin ? t('sidebar.platform_admin') : t('sidebar.clinic_management')}
             </span>
           </div>
           
@@ -203,7 +206,7 @@ export function Sidebar({ user, clinic }: SidebarProps) {
               <div className="flex items-center gap-4 relative">
                 <span className="text-xl relative">
                   {link.icon}
-                  {link.label === 'การแจ้งเตือน' && unreadCount > 0 && (
+                  {link.href === '/admin/notifications' && unreadCount > 0 && (
                     <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-black text-white shadow-sm ring-2 ring-white animate-in zoom-in duration-300">
                       {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
@@ -250,7 +253,7 @@ export function Sidebar({ user, clinic }: SidebarProps) {
           <span className="text-xl">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
           </span>
-          {!isCollapsed && <span className="text-[11px] font-black uppercase tracking-widest">ออกจากระบบ</span>}
+          {!isCollapsed && <span className="text-[11px] font-black uppercase tracking-widest">{t('sidebar.logout')}</span>}
         </button>
       </div>
       </aside>

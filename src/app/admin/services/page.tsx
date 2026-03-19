@@ -5,8 +5,10 @@ import { Service } from '@/modules/services/types';
 import Pagination from '@/components/Pagination';
 import DataTable, { Column } from '@/components/DataTable';
 import { ROLES, Role } from '@/lib/constants';
+import { useTranslation } from '@/providers/LanguageProvider';
 
 export default function AdminServicesPage() {
+  const { t } = useTranslation();
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState<{ id: string, role: string } | null>(null);
@@ -99,23 +101,23 @@ export default function AdminServicesPage() {
         setShowModal(false);
         fetchServices();
       } else {
-        alert(data.error || 'เกิดข้อผิดพลาด');
+        alert(data.error || t('common.error'));
       }
     } catch (err) {
-      alert('เชื่อมต่อไม่สำเร็จ');
+      alert(t('common.error'));
     }
   };
 
   const handleDelete = async (id: string) => {
     if (!canManage) return;
-    if (!confirm('คุณต้องการลบบริการนี้ใช่หรือไม่?')) return;
+    if (!confirm(t('services.delete_confirm'))) return;
     try {
       const res = await fetch(`/api/services/${id}?clinicSlug=${clinicSlug}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.success) fetchServices();
-      else alert(data.error || 'ลบไม่สำเร็จ');
+      else alert(data.error || t('common.error'));
     } catch (err) {
-      alert('เชื่อมต่อไม่สำเร็จ');
+      alert(t('common.error'));
     }
   };
 
@@ -130,26 +132,26 @@ export default function AdminServicesPage() {
 
   const columns: Column<Service>[] = [
     {
-      header: 'Service Details',
+      header: t('services.col_name'),
       accessorKey: 'serviceDetails',
       sortable: true,
       cell: (s) => (
         <div className="flex flex-col">
           <div className="font-bold text-foreground text-[13px] group-hover:text-accent transition-colors uppercase tracking-tight">{s.name}</div>
-          <div className="text-[11px] text-foreground-muted truncate max-w-xs mt-0.5 font-medium">{s.description || 'No description provided'}</div>
+          <div className="text-[11px] text-foreground-muted truncate max-w-xs mt-0.5 font-medium">{s.description || t('services.no_description')}</div>
         </div>
       )
     },
     {
-      header: 'Duration',
+      header: t('services.col_duration'),
       accessorKey: 'durationMin',
       sortable: true,
       cell: (s) => (
-        <div className="text-[11px] font-black text-foreground/70 bg-muted px-4 py-1.5 rounded-full inline-block border border-border-ios">{s.durationMin} MINS</div>
+        <div className="text-[11px] font-black text-foreground/70 bg-muted px-4 py-1.5 rounded-full inline-block border border-border-ios uppercase tracking-widest">{s.durationMin} {t('appointments.minutes')}</div>
       )
     },
     {
-      header: 'Price',
+      header: t('services.col_price'),
       accessorKey: 'price',
       sortable: true,
       cell: (s) => (
@@ -157,19 +159,19 @@ export default function AdminServicesPage() {
       )
     },
     {
-      header: 'Status',
+      header: t('common.status'),
       accessorKey: 'isActive',
       sortable: true,
       cell: (s) => (
         <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
           s.isActive ? 'bg-green-50 text-green-600 border-green-100' : 'bg-muted text-foreground-muted/50 border-border-ios'
         }`}>
-          {s.isActive ? 'Active' : 'Archived'}
+          {s.isActive ? t('services.status_active') : t('services.status_archived')}
         </span>
       )
     },
     ...(canManage ? [{
-      header: 'Actions',
+      header: t('common.actions'),
       accessorKey: 'actions',
       className: 'text-right',
       cell: (s: Service) => (
@@ -178,13 +180,13 @@ export default function AdminServicesPage() {
             onClick={() => handleOpenModal(s)}
             className="text-[10px] font-black text-accent hover:text-accent/80 uppercase tracking-widest transition-all hover:scale-110"
           >
-            Modify
+            {t('common.edit')}
           </button>
           <button 
             onClick={() => handleDelete(s.id)}
             className="text-[10px] font-black text-foreground-muted/40 hover:text-red-500 uppercase tracking-widest transition-all hover:scale-110"
           >
-            Delete
+            {t('common.delete')}
           </button>
         </div>
       )
@@ -195,8 +197,8 @@ export default function AdminServicesPage() {
     <div className="animate-in fade-in duration-700">
       <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
         <div>
-          <h1 className="text-4xl font-display font-black text-foreground tracking-tighter mb-2">Clinic Services</h1>
-          <p className="text-[13px] font-bold text-foreground-muted uppercase tracking-widest">Procedural Menu Management</p>
+          <h1 className="text-4xl font-display font-black text-foreground tracking-tighter mb-2">{t('services.title')}</h1>
+          <p className="text-[13px] font-bold text-foreground-muted uppercase tracking-widest">{t('services.subtitle')}</p>
         </div>
         {canManage && (
           <button 
@@ -206,7 +208,7 @@ export default function AdminServicesPage() {
             <svg className="w-5 h-5 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
-            Add New Service
+            {t('services.add_new')}
           </button>
         )}
       </div>
@@ -215,7 +217,7 @@ export default function AdminServicesPage() {
         <div className="relative group">
           <input
             type="text"
-            placeholder="Search Services..."
+            placeholder={t('common.search')}
             className="w-full pl-12 pr-6 py-4 rounded-2xl bg-white border border-border-ios shadow-sm focus:ring-2 focus:ring-accent/10 focus:border-accent transition-all font-medium text-[13px]"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -267,11 +269,11 @@ export default function AdminServicesPage() {
         <div className="fixed inset-0 bg-foreground/30 backdrop-blur-md flex items-center justify-center p-6 z-50 animate-in fade-in duration-300">
           <div className="card-luxury w-full max-w-lg p-10 border-none shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)]">
             <h2 className="text-3xl font-display font-black text-foreground mb-8 tracking-tighter">
-              {editingService ? 'Edit Service' : 'New Service'}
+              {editingService ? t('services.modal_title_edit') : t('services.modal_title_new')}
             </h2>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label className="block text-[11px] font-black text-foreground-muted uppercase tracking-widest mb-2 ml-1">Service Title</label>
+                <label className="block text-[11px] font-black text-foreground-muted uppercase tracking-widest mb-2 ml-1">{t('services.label_name')}</label>
                 <input
                   type="text"
                   required
@@ -281,7 +283,7 @@ export default function AdminServicesPage() {
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-black text-foreground-muted uppercase tracking-widest mb-2 ml-1">Service Description</label>
+                <label className="block text-[11px] font-black text-foreground-muted uppercase tracking-widest mb-2 ml-1">{t('services.label_description')}</label>
                 <textarea
                   className="w-full h-28"
                   value={formData.description}
@@ -290,7 +292,7 @@ export default function AdminServicesPage() {
               </div>
               <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-[11px] font-black text-foreground-muted uppercase tracking-widest mb-2 ml-1">Duration (Mins)</label>
+                  <label className="block text-[11px] font-black text-foreground-muted uppercase tracking-widest mb-2 ml-1">{t('services.label_duration')}</label>
                   <input
                     type="number"
                     required
@@ -300,7 +302,7 @@ export default function AdminServicesPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-black text-foreground-muted uppercase tracking-widest mb-2 ml-1">Price (THB)</label>
+                  <label className="block text-[11px] font-black text-foreground-muted uppercase tracking-widest mb-2 ml-1">{t('services.label_price')}</label>
                   <input
                     type="number"
                     required
@@ -314,7 +316,7 @@ export default function AdminServicesPage() {
                 <div role="checkbox" aria-checked={formData.isActive} className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${formData.isActive ? 'bg-accent border-accent' : 'border-border-ios'}`}>
                   {formData.isActive && <div className="w-2 h-2 bg-white rounded-full" />}
                 </div>
-                <label className="text-[13px] font-bold text-foreground/80 select-none cursor-pointer group-hover:text-foreground transition-colors">Visible to clients</label>
+                <label className="text-[13px] font-bold text-foreground/80 select-none cursor-pointer group-hover:text-foreground transition-colors">{t('services.label_visibility')}</label>
               </div>
               <div className="flex gap-4 mt-8">
                 <button
@@ -322,13 +324,13 @@ export default function AdminServicesPage() {
                   onClick={() => setShowModal(false)}
                   className="flex-1 py-4 rounded-full bg-muted text-foreground-muted font-black uppercase text-[11px] tracking-widest hover:bg-muted/80 transition-all active:scale-95"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
                 <button
                   type="submit"
                   className="flex-1 py-4 rounded-full bg-foreground text-white font-black uppercase text-[11px] tracking-widest hover:bg-foreground/90 transition-all shadow-lg active:scale-95"
                 >
-                  {editingService ? 'Apply Changes' : 'Create Service'}
+                  {editingService ? t('services.btn_apply') : t('services.btn_create')}
                 </button>
               </div>
             </form>

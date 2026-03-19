@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { th } from 'date-fns/locale';
+import { th, enUS } from 'date-fns/locale';
 import { Clinic } from '@/modules/clinics/repository';
 import { BusinessHours, BlockedSlot } from '@/modules/bookings/types';
+import { useTranslation } from '@/providers/LanguageProvider';
 
 interface ClinicSettingsFormProps {
   clinic: Clinic;
@@ -13,6 +14,9 @@ interface ClinicSettingsFormProps {
 }
 
 export default function ClinicSettingsForm({ clinic, businessHours, blockedSlots }: ClinicSettingsFormProps) {
+  const { t, locale } = useTranslation();
+  const dateLocale = locale === 'en' ? enUS : th;
+
   const [activeTab, setActiveTab] = useState<'general' | 'schedule' | 'blackout'>('general');
   const [isSaving, setIsSaving] = useState(false);
   
@@ -30,13 +34,13 @@ export default function ClinicSettingsForm({ clinic, businessHours, blockedSlots
   const [newBlockReason, setNewBlockReason] = useState('');
 
   const days = [
-    { id: 0, th: 'อาทิตย์', en: 'Sunday' },
-    { id: 1, th: 'จันทร์', en: 'Monday' },
-    { id: 2, th: 'อังคาร', en: 'Tuesday' },
-    { id: 3, th: 'พุธ', en: 'Wednesday' },
-    { id: 4, th: 'พฤหัสบดี', en: 'Thursday' },
-    { id: 5, th: 'ศุกร์', en: 'Friday' },
-    { id: 6, th: 'เสาร์', en: 'Saturday' }
+    { id: 0, label: t('common.days.sunday') },
+    { id: 1, label: t('common.days.monday') },
+    { id: 2, label: t('common.days.tuesday') },
+    { id: 3, label: t('common.days.wednesday') },
+    { id: 4, label: t('common.days.thursday') },
+    { id: 5, label: t('common.days.friday') },
+    { id: 6, label: t('common.days.saturday') }
   ];
 
   const handleUpdateClinic = async () => {
@@ -47,8 +51,8 @@ export default function ClinicSettingsForm({ clinic, businessHours, blockedSlots
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, logoUrl, themeConfig }),
       });
-      if (!res.ok) throw new Error('Failed to update clinic');
-      alert('อัปเดตข้อมูลคลินิกสำเร็จ!');
+      if (!res.ok) throw new Error(t('common.error'));
+      alert(t('settings.general.update_success'));
     } catch (err: any) {
       alert(err.message);
     } finally {
@@ -64,8 +68,7 @@ export default function ClinicSettingsForm({ clinic, businessHours, blockedSlots
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(bh),
       });
-      if (!res.ok) throw new Error('Failed to update business hours');
-      // Update local state is handled within the mapped inputs
+      if (!res.ok) throw new Error(t('common.error'));
     } catch (err: any) {
       alert(err.message);
     } finally {
@@ -82,7 +85,7 @@ export default function ClinicSettingsForm({ clinic, businessHours, blockedSlots
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ blockedDate: newBlockDate, reason: newBlockReason }),
       });
-      if (!res.ok) throw new Error('Failed to add blocked slot');
+      if (!res.ok) throw new Error(t('common.error'));
       const newBlock = (await res.json()).data;
       setBlocks([newBlock, ...blocks]);
       setNewBlockReason('');
@@ -94,13 +97,13 @@ export default function ClinicSettingsForm({ clinic, businessHours, blockedSlots
   };
 
   const handleDeleteBlock = async (id: string) => {
-    if (!confirm('ยืนยันลบข้อมูลช่วงเวลาที่ปิดรับจอง?')) return;
+    if (!confirm(t('settings.blackout.delete_confirm'))) return;
     setIsSaving(true);
     try {
       const res = await fetch(`/api/blocked-slots/${id}?clinicId=${clinic.id}`, {
         method: 'DELETE',
       });
-      if (!res.ok) throw new Error('Failed to delete blocked slot');
+      if (!res.ok) throw new Error(t('common.error'));
       setBlocks(blocks.filter(b => b.id !== id));
     } catch (err: any) {
       alert(err.message);
@@ -123,7 +126,7 @@ export default function ClinicSettingsForm({ clinic, businessHours, blockedSlots
                 : 'text-foreground-muted hover:text-foreground opacity-60 hover:opacity-100'
             }`}
           >
-            {tab}
+            {t(`settings.tabs.${tab}`)}
           </button>
         ))}
       </div>
@@ -136,13 +139,13 @@ export default function ClinicSettingsForm({ clinic, businessHours, blockedSlots
         {activeTab === 'general' && (
           <div className="p-10 md:p-14 space-y-10 relative z-10 transition-all duration-700 animate-in fade-in zoom-in-95">
              <div>
-                <h2 className="text-2xl font-display font-black tracking-tighter text-foreground mb-1 uppercase">Clinic Identity</h2>
-                <p className="text-[12px] font-bold text-foreground-muted uppercase tracking-widest opacity-60">Visual branding and core configuration</p>
+                <h2 className="text-2xl font-display font-black tracking-tighter text-foreground mb-1 uppercase">{t('settings.general.title')}</h2>
+                <p className="text-[12px] font-bold text-foreground-muted uppercase tracking-widest opacity-60">{t('settings.general.subtitle')}</p>
              </div>
              
              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-2">
-                   <label className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground-muted ml-1">Clinic Official Name</label>
+                   <label className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground-muted ml-1">{t('settings.general.label_name')}</label>
                    <input 
                       value={name}
                       onChange={(e) => setName(e.target.value)}
@@ -151,7 +154,7 @@ export default function ClinicSettingsForm({ clinic, businessHours, blockedSlots
                    />
                 </div>
                 <div className="space-y-2">
-                   <label className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground-muted ml-1">Logo URL Resource</label>
+                   <label className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground-muted ml-1">{t('settings.general.label_logo')}</label>
                    <input 
                       value={logoUrl}
                       onChange={(e) => setLogoUrl(e.target.value)}
@@ -160,7 +163,7 @@ export default function ClinicSettingsForm({ clinic, businessHours, blockedSlots
                    />
                 </div>
                 <div className="md:col-span-2 space-y-2">
-                   <label className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground-muted ml-1">Theme Configuration (JSON Object)</label>
+                   <label className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground-muted ml-1">{t('settings.general.label_theme')}</label>
                    <textarea 
                       value={themeConfig}
                       onChange={(e) => setThemeConfig(e.target.value)}
@@ -175,7 +178,7 @@ export default function ClinicSettingsForm({ clinic, businessHours, blockedSlots
                 disabled={isSaving}
                 className="bg-foreground text-white px-12 py-5 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] hover:bg-accent transition-all shadow-xl active:scale-95 disabled:opacity-50"
              >
-                {isSaving ? 'Processing...' : 'Secure Changes'}
+                {isSaving ? t('settings.processing') : t('settings.general.save_btn')}
              </button>
           </div>
         )}
@@ -184,8 +187,8 @@ export default function ClinicSettingsForm({ clinic, businessHours, blockedSlots
         {activeTab === 'schedule' && (
           <div className="p-10 md:p-14 space-y-10 relative z-10 animate-in fade-in slide-in-from-right-4 duration-700">
              <div>
-                <h2 className="text-2xl font-display font-black tracking-tighter text-foreground mb-1 uppercase">Operational Schedule</h2>
-                <p className="text-[12px] font-bold text-foreground-muted uppercase tracking-widest opacity-60">Define weekly clinical availability</p>
+                <h2 className="text-2xl font-display font-black tracking-tighter text-foreground mb-1 uppercase">{t('settings.schedule.title')}</h2>
+                <p className="text-[12px] font-bold text-foreground-muted uppercase tracking-widest opacity-60">{t('settings.schedule.subtitle')}</p>
              </div>
 
              <div className="space-y-4 border-t border-border-ios/40 pt-8">
@@ -196,8 +199,7 @@ export default function ClinicSettingsForm({ clinic, businessHours, blockedSlots
                   return (
                     <div key={day.id} className="flex items-center justify-between group py-2">
                       <div className="w-48">
-                        <span className="text-[13px] font-black text-foreground uppercase tracking-widest">{day.en}</span>
-                        <p className="text-[10px] font-bold text-foreground-muted opacity-40 uppercase">{day.th}</p>
+                        <span className="text-[13px] font-black text-foreground uppercase tracking-widest">{day.label}</span>
                       </div>
                       
                       <div className="flex items-center gap-4">
@@ -231,7 +233,7 @@ export default function ClinicSettingsForm({ clinic, businessHours, blockedSlots
                               : 'bg-red-500/5 text-red-500 border-red-500/20 opacity-40'
                           }`}
                         >
-                          {dayHour.isOpen ? 'Operational' : 'Restricted'}
+                          {dayHour.isOpen ? t('settings.schedule.status_open') : t('settings.schedule.status_closed')}
                         </button>
                         
                         <button 
@@ -254,13 +256,13 @@ export default function ClinicSettingsForm({ clinic, businessHours, blockedSlots
         {activeTab === 'blackout' && (
           <div className="p-10 md:p-14 space-y-10 relative z-10 animate-in fade-in slide-in-from-right-4 duration-700">
              <div>
-                <h2 className="text-2xl font-display font-black tracking-tighter text-foreground mb-1 uppercase">Reserved Vacancies</h2>
-                <p className="text-[12px] font-bold text-foreground-muted uppercase tracking-widest opacity-60">Manage holidays and temporary blackout periods</p>
+                <h2 className="text-2xl font-display font-black tracking-tighter text-foreground mb-1 uppercase">{t('settings.blackout.title')}</h2>
+                <p className="text-[12px] font-bold text-foreground-muted uppercase tracking-widest opacity-60">{t('settings.blackout.subtitle')}</p>
              </div>
 
              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-muted/30 p-8 rounded-3xl border border-border-ios/40">
                 <div className="space-y-2">
-                   <label className="text-[9px] font-black uppercase tracking-[0.2em] text-foreground-muted ml-1">Target Date</label>
+                   <label className="text-[9px] font-black uppercase tracking-[0.2em] text-foreground-muted ml-1">{t('settings.blackout.label_date')}</label>
                    <input 
                       type="date"
                       value={newBlockDate}
@@ -269,20 +271,20 @@ export default function ClinicSettingsForm({ clinic, businessHours, blockedSlots
                    />
                 </div>
                 <div className="md:col-span-2 space-y-2">
-                   <label className="text-[9px] font-black uppercase tracking-[0.2em] text-foreground-muted ml-1">Reason (Optional)</label>
+                   <label className="text-[9px] font-black uppercase tracking-[0.2em] text-foreground-muted ml-1">{t('settings.blackout.label_reason')}</label>
                    <div className="flex gap-4">
                       <input 
                           value={newBlockReason}
                           onChange={(e) => setNewBlockReason(e.target.value)}
                           className="w-full bg-white! border-none!"
-                          placeholder="Public Holiday, Renovation..."
+                          placeholder={t('settings.blackout.placeholder_reason')}
                       />
                       <button 
                          onClick={handleAddBlock}
                          disabled={isSaving}
                          className="whitespace-nowrap bg-foreground text-white px-8 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-accent transition-all shadow-md active:scale-95 disabled:opacity-50"
                       >
-                         Add Entry
+                         {t('settings.blackout.add_btn')}
                       </button>
                    </div>
                 </div>
@@ -291,16 +293,16 @@ export default function ClinicSettingsForm({ clinic, businessHours, blockedSlots
              <div className="space-y-3 pt-6">
                 {blocks.length === 0 ? (
                    <div className="py-12 text-center border-2 border-dashed border-border-ios/40 rounded-3xl">
-                      <p className="text-[11px] font-bold text-foreground-muted opacity-40 uppercase tracking-widest italic">No blackout periods registered</p>
+                      <p className="text-[11px] font-bold text-foreground-muted opacity-40 uppercase tracking-widest italic">{t('settings.blackout.empty')}</p>
                    </div>
                 ) : (
                    blocks.map((block) => (
                       <div key={block.id} className="flex items-center justify-between p-5 rounded-2xl border border-border-ios/40 bg-white hover:shadow-md transition-all group">
                          <div>
                             <span className="text-[13px] font-black text-foreground uppercase tracking-widest">
-                               {format(new Date(block.blockedDate), 'EEEE, d MMMM yyyy', { locale: th })}
+                               {format(new Date(block.blockedDate), 'EEEE, d MMMM yyyy', { locale: dateLocale })}
                             </span>
-                            <p className="text-[11px] font-bold text-accent uppercase tracking-widest mt-0.5">{block.reason || 'Restricted Slot'}</p>
+                            <p className="text-[11px] font-bold text-accent uppercase tracking-widest mt-0.5">{block.reason || t('settings.blackout.restricted_label')}</p>
                          </div>
                          <button 
                             onClick={() => handleDeleteBlock(block.id)}
@@ -328,12 +330,12 @@ export default function ClinicSettingsForm({ clinic, businessHours, blockedSlots
                  </svg>
               </div>
               <div className="space-y-4">
-                 <h2 className="text-xl font-display font-black text-red-900 uppercase tracking-tighter">Clinical De-registry</h2>
+                 <h2 className="text-xl font-display font-black text-red-900 uppercase tracking-tighter">{t('settings.purge.title')}</h2>
                  <p className="text-[12px] text-red-800/70 font-bold leading-relaxed italic uppercase tracking-wider opacity-60">
-                    Warning: Initiating a registry purge will permanently erase all historical encounter data and clinical archives. This action is definitive and cannot be reversed by system administrators.
+                    {t('settings.purge.warning')}
                  </p>
                  <button className="text-red-600 text-[10px] font-black border border-red-200 bg-white px-10 py-4 rounded-full hover:bg-red-600 hover:text-white transition-all uppercase tracking-[0.2em] shadow-sm">
-                    Purge All Archives
+                    {t('settings.purge.btn')}
                  </button>
               </div>
            </div>

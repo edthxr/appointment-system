@@ -2,13 +2,17 @@
 
 import { useEffect, useState, useCallback, Suspense } from 'react';
 import { format } from 'date-fns';
+import { th, enUS } from 'date-fns/locale';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Pagination from '@/components/Pagination';
 import DataTable, { Column } from '@/components/DataTable';
 import { cn } from '@/lib/utils';
-
+import { useTranslation } from '@/providers/LanguageProvider';
 
 function AppointmentsContent() {
+  const { t, locale } = useTranslation();
+  const dateLocale = locale === 'th' ? th : enUS;
+
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -112,10 +116,10 @@ function AppointmentsContent() {
           setSelectedAppointment({ ...selectedAppointment, status });
         }
       } else {
-        alert(data.error || 'ไม่สามารถอัปเดตสถานะได้');
+        alert(data.error || t('appointments.update_error'));
       }
     } catch (err) {
-      alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+      alert(t('appointments.connection_error'));
     }
   };
 
@@ -130,54 +134,60 @@ function AppointmentsContent() {
 
   const columns: Column<any>[] = [
     {
-      header: 'Customer Details',
+      header: t('appointments.col_customer'),
       accessorKey: 'userName',
       sortable: true,
       cell: (a) => (
         <div className="flex flex-col">
-          <div className="font-bold text-foreground text-[13px] group-hover:text-accent transition-colors">{a.user?.name}</div>
+          <div className="font-bold text-foreground text-[13px] group-hover:text-accent transition-colors">{a.user?.name || t('appointments.unknown_client')}</div>
           <div className="text-[11px] text-foreground-muted mt-0.5">{a.user?.email}</div>
         </div>
       )
     },
     {
-      header: 'Service',
+      header: t('appointments.col_service'),
       accessorKey: 'service',
       sortable: true,
       cell: (a) => (
-        <span className="text-[12px] font-black text-foreground/80 tracking-tight uppercase">{a.service?.name}</span>
+        <span className="text-[12px] font-black text-foreground/80 tracking-tight uppercase">{a.service?.name || t('appointments.general_service')}</span>
       )
     },
     {
-      header: 'Schedule',
+      header: t('appointments.col_schedule'),
       accessorKey: 'appointmentDate',
       sortable: true,
       cell: (a) => (
         <div className="flex flex-col">
-          <div className="text-[12px] font-black text-foreground tracking-tight">{format(new Date(a.appointmentDate), 'dd MMM yyyy')}</div>
+          <div className="text-[12px] font-black text-foreground tracking-tight">{format(new Date(a.appointmentDate), 'dd MMM yyyy', { locale: dateLocale })}</div>
           <div className="text-[10px] font-bold text-foreground-muted uppercase tracking-widest mt-1">{a.startTime} – {a.endTime}</div>
         </div>
       )
     },
     {
-      header: 'Status',
+      header: t('appointments.col_status'),
       accessorKey: 'status',
       sortable: true,
-      cell: (a) => (
-        <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
-          a.status === 'confirmed' ? 'bg-green-50 text-green-600 border-green-100 shadow-sm shadow-green-100' : 
-          a.status === 'completed' ? 'bg-blue-50 text-blue-600 border-blue-100 shadow-sm shadow-blue-100' :
-          a.status === 'cancelled' ? 'bg-red-50 text-red-600 border-red-100 opacity-60' : 
-          'bg-yellow-50 text-yellow-600 border-yellow-100 animate-pulse'
-        }`}>
-          {a.status === 'confirmed' ? 'Verified' : 
-           a.status === 'completed' ? 'Finished' :
-           a.status === 'cancelled' ? 'Voided' : 'Pending'}
-        </span>
-      )
+      cell: (a) => {
+        const statusMap: Record<string, string> = {
+          confirmed: t('appointments.status_confirmed'),
+          completed: t('appointments.status_completed'),
+          cancelled: t('appointments.status_cancelled'),
+          pending: t('appointments.status_pending'),
+        };
+        return (
+          <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+            a.status === 'confirmed' ? 'bg-green-50 text-green-600 border-green-100 shadow-sm shadow-green-100' : 
+            a.status === 'completed' ? 'bg-blue-50 text-blue-600 border-blue-100 shadow-sm shadow-blue-100' :
+            a.status === 'cancelled' ? 'bg-red-50 text-red-600 border-red-100 opacity-60' : 
+            'bg-yellow-50 text-yellow-600 border-yellow-100 animate-pulse'
+          }`}>
+            {statusMap[a.status] || a.status}
+          </span>
+        );
+      }
     },
     {
-      header: 'Control',
+      header: t('appointments.col_control'),
       accessorKey: 'actions',
       className: 'text-right',
       cell: (a) => (
@@ -189,14 +199,14 @@ function AppointmentsContent() {
             }}
             className="text-[10px] font-black text-accent hover:text-foreground uppercase tracking-widest transition-all hover:scale-110"
           >
-            Details
+            {t('common.details')}
           </button>
           {a.status === 'pending' && (
             <button 
               onClick={() => handleUpdateStatus(a.id, 'confirmed')}
               className="text-[10px] font-black text-green-600 hover:text-green-800 uppercase tracking-widest transition-all hover:scale-110"
             >
-              Verify
+              {t('appointments.verify')}
             </button>
           )}
           {a.status !== 'cancelled' && a.status !== 'completed' && (
@@ -204,7 +214,7 @@ function AppointmentsContent() {
               onClick={() => handleUpdateStatus(a.id, 'cancelled')}
               className="text-[10px] font-black text-foreground-muted hover:text-red-500 uppercase tracking-widest transition-all hover:scale-110"
             >
-              Void
+              {t('appointments.void')}
             </button>
           )}
         </div>
@@ -216,11 +226,11 @@ function AppointmentsContent() {
     <div className="animate-in fade-in duration-700">
       <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
         <div>
-          <h1 className="text-4xl font-display font-black text-foreground tracking-tighter mb-2" id="appointments-title">Appointments</h1>
-          <p className="text-[13px] font-black text-accent uppercase tracking-[0.3em]">Client Service Masterlist</p>
+          <h1 className="text-4xl font-display font-black text-foreground tracking-tighter mb-2" id="appointments-title">{t('appointments.title')}</h1>
+          <p className="text-[13px] font-black text-accent uppercase tracking-[0.3em]">{t('appointments.subtitle')}</p>
         </div>
         <div className="text-[11px] font-black text-foreground-muted italic bg-muted px-4 py-2 rounded-full border border-border-ios">
-          Showing {appointments.length} of {total} scheduled visits
+          {t('appointments.showing_info').replace('{count}', String(appointments.length)).replace('{total}', String(total))}
         </div>
       </div>
 
@@ -229,7 +239,7 @@ function AppointmentsContent() {
           <input
             id="search-appointments"
             type="text"
-            placeholder="Search Appointments..."
+            placeholder={t('appointments.search_placeholder')}
             className="w-full pl-12 pr-6 py-4 rounded-2xl bg-white border border-border-ios shadow-sm focus:ring-2 focus:ring-accent/10 focus:border-accent transition-all font-medium text-[13px]"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -295,21 +305,21 @@ function AppointmentsContent() {
                   selectedAppointment.status === 'cancelled' ? 'bg-red-50 text-red-600 border-red-100' : 
                   'bg-yellow-50 text-yellow-600 border-yellow-100'
                 )}>
-                  {selectedAppointment.status === 'confirmed' ? 'Verified' : 
-                   selectedAppointment.status === 'completed' ? 'Finished' :
-                   selectedAppointment.status === 'cancelled' ? 'Voided' : 'Pending Review'}
+                  {selectedAppointment.status === 'confirmed' ? t('appointments.status_confirmed') : 
+                   selectedAppointment.status === 'completed' ? t('appointments.status_completed') :
+                   selectedAppointment.status === 'cancelled' ? t('appointments.status_cancelled') : t('appointments.status_pending')}
                 </div>
               </div>
 
               <div className="space-y-12">
                 <section>
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-accent mb-4">Patient Profile</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-accent mb-4">{t('appointments.patient_info')}</p>
                   <div className="flex items-center gap-6 mb-8 group">
                     <div className="w-16 h-16 rounded-3xl bg-foreground text-white flex items-center justify-center text-2xl font-black shadow-xl group-hover:scale-105 transition-transform duration-500">
-                      {selectedAppointment.user?.name.charAt(0).toUpperCase()}
+                      {selectedAppointment.user?.name?.charAt(0).toUpperCase() || '?'}
                     </div>
                     <div>
-                      <h2 className="text-2xl font-black text-foreground tracking-tight">{selectedAppointment.user?.name}</h2>
+                      <h2 className="text-2xl font-black text-foreground tracking-tight">{selectedAppointment.user?.name || t('appointments.unknown_client')}</h2>
                       <div className="flex flex-col gap-1 mt-1">
                         <p className="text-sm text-foreground-muted flex items-center gap-2">
                           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
@@ -317,7 +327,7 @@ function AppointmentsContent() {
                         </p>
                         <p className="text-sm text-foreground-muted flex items-center gap-2">
                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
-                           {selectedAppointment.phoneNumber || 'Not provided'}
+                           {selectedAppointment.phoneNumber || t('common.no_data')}
                         </p>
                       </div>
                     </div>
@@ -326,32 +336,32 @@ function AppointmentsContent() {
 
                 <section className="grid grid-cols-2 gap-x-8 gap-y-10 bg-muted/20 p-8 rounded-[40px] border border-border-ios/20">
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-accent/60 mb-2">Selected Treatment</p>
-                    <p className="text-sm font-black text-foreground uppercase tracking-tight">{selectedAppointment.service?.name}</p>
-                    <p className="text-[11px] text-foreground-muted mt-1">{selectedAppointment.service?.durationMin} minute duration</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-accent/60 mb-2">{t('appointments.service_details')}</p>
+                    <p className="text-sm font-black text-foreground uppercase tracking-tight">{selectedAppointment.service?.name || t('appointments.general_service')}</p>
+                    <p className="text-[11px] text-foreground-muted mt-1">{selectedAppointment.service?.durationMin} {t('appointments.minutes')}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-accent/60 mb-2">Clinic Branch</p>
-                    <p className="text-sm font-black text-foreground uppercase tracking-tight">{selectedAppointment.clinic?.name || 'Main Branch'}</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-accent/60 mb-2">{t('sidebar.clinic_info')}</p>
+                    <p className="text-sm font-black text-foreground uppercase tracking-tight">{selectedAppointment.clinic?.name || t('appointments.main_branch')}</p>
                     <p className="text-[11px] text-foreground-muted mt-1 uppercase tracking-widest">{selectedAppointment.clinicSlug}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-accent/60 mb-2">Visit Schedule</p>
-                    <p className="text-sm font-black text-foreground">{format(new Date(selectedAppointment.appointmentDate), 'EEEE, dd MMM yyyy')}</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-accent/60 mb-2">{t('appointments.schedule')}</p>
+                    <p className="text-sm font-black text-foreground">{format(new Date(selectedAppointment.appointmentDate), 'EEEE, dd MMM yyyy', { locale: dateLocale })}</p>
                     <p className="text-[11px] font-bold text-accent uppercase tracking-[0.2em] mt-1">{selectedAppointment.startTime} – {selectedAppointment.endTime}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-accent/60 mb-2">Registered On</p>
-                    <p className="text-sm font-bold text-foreground">{format(new Date(selectedAppointment.createdAt), 'dd MMM yyyy')}</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-accent/60 mb-2">{t('appointments.registered_on')}</p>
+                    <p className="text-sm font-bold text-foreground">{format(new Date(selectedAppointment.createdAt), 'dd MMM yyyy', { locale: dateLocale })}</p>
                     <p className="text-[11px] text-foreground-muted mt-1">{format(new Date(selectedAppointment.createdAt), 'HH:mm:ss')}</p>
                   </div>
                 </section>
 
                 <section>
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-accent mb-4">Treatment Objective / Notes</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-accent mb-4">{t('appointments.notes')}</p>
                   <div className="bg-white p-6 rounded-3xl border border-border-ios/50 shadow-inner">
                     <p className="text-sm text-foreground italic leading-relaxed">
-                      {selectedAppointment.note || "No specific objectives or notes specified for this appointment."}
+                      {selectedAppointment.note || t('common.no_data')}
                     </p>
                   </div>
                 </section>
@@ -364,7 +374,7 @@ function AppointmentsContent() {
                         className="flex-1 bg-foreground text-white py-5 rounded-3xl text-[12px] font-black uppercase tracking-widest hover:bg-accent transition-all shadow-2xl active:scale-95 flex items-center justify-center gap-2"
                       >
                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
-                        Verify Appointment
+                        {t('appointments.verify')}
                       </button>
                     )}
                     {selectedAppointment.status === 'confirmed' && (
@@ -373,7 +383,7 @@ function AppointmentsContent() {
                         className="flex-1 bg-blue-600 text-white py-5 rounded-3xl text-[12px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-2xl active:scale-95 flex items-center justify-center gap-2"
                       >
                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                        Mark as Completed
+                        {t('appointments.complete')}
                       </button>
                     )}
                   </div>
@@ -383,7 +393,7 @@ function AppointmentsContent() {
                       onClick={() => handleUpdateStatus(selectedAppointment.id, 'cancelled')}
                       className="w-full border border-border-ios/40 text-foreground-muted py-4 rounded-3xl text-[11px] font-black uppercase tracking-widest hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all active:scale-95"
                     >
-                      Void / Cancel Appointment
+                      {t('appointments.void')}
                     </button>
                   )}
                 </section>
@@ -403,8 +413,9 @@ function AppointmentsContent() {
 
 // Wrapping with Suspense for useSearchParams
 export default function AdminAppointmentsPage() {
+  const { t } = useTranslation();
   return (
-    <Suspense fallback={<div>Loading appointments...</div>}>
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen font-black text-foreground uppercase tracking-widest opacity-40">{t('appointments.loading')}</div>}>
       <AppointmentsContent />
     </Suspense>
   );

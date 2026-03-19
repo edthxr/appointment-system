@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from './LanguageProvider';
 
 interface Notification {
   id: string;
@@ -43,6 +44,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     autoMarkAsRead: false,
   });
   
+  const { t } = useTranslation();
   const lastCheckedId = useRef<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const router = useRouter();
@@ -77,7 +79,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   const showBrowserNotification = (notif: Notification) => {
     if (preferences.browserNotificationsEnabled && Notification.permission === 'granted') {
-      const n = new Notification('QueueFlow Registration', {
+      const n = new Notification(t('notifications.type_booking_created'), {
         body: notif.message,
         icon: '/logo.png', // Fallback, update if available
       });
@@ -219,7 +221,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
                 </div>
                 <div className="flex-1">
                   <div className="flex justify-between items-start mb-1">
-                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-accent/80">Incoming Queue</p>
+                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-accent/80">{t('notifications.incoming_queue') || 'Incoming Queue'}</p>
                     <button 
                       onClick={(e) => { e.stopPropagation(); dismissToast(notif.id); }}
                       className="text-foreground-muted hover:text-foreground p-1 -mt-1 -mr-1"
@@ -227,12 +229,12 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
                   </div>
-                  <p className="text-sm font-bold text-foreground leading-tight mb-1">มีรายการจองใหม่เข้ามา</p>
+                  <p className="text-sm font-bold text-foreground leading-tight mb-1">{t('notifications.new_booking_alert') || 'มีรายการจองใหม่เข้ามา'}</p>
                   <p className="text-[12px] text-foreground-muted line-clamp-2 leading-relaxed">
                     {notif.message}
                   </p>
                   <div className="mt-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-accent group-hover:gap-3 transition-all animate-pulse">
-                    Tap to verify
+                    {t('notifications.tap_to_verify') || 'Tap to verify'}
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" /></svg>
                   </div>
                 </div>

@@ -3,8 +3,10 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from '@/providers/LanguageProvider';
 
 export default function RegisterPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [formData, setFormData] = useState({
     name: '',
@@ -33,10 +35,10 @@ export default function RegisterPage() {
         router.push('/');
         router.refresh();
       } else {
-        setError(data.error || 'ลงทะเบียนไม่สำเร็จ');
+        setError(data.error || t('auth.error_failed'));
       }
     } catch (err) {
-      setError('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+      setError(t('booking.error_connection'));
     } finally {
       setLoading(false);
     }
@@ -47,10 +49,10 @@ export default function RegisterPage() {
       <div className="card-luxury w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-700">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-display font-black tracking-tighter text-foreground mb-3">
-            Aura <span className="font-light text-foreground-muted">Clinic</span>
+            {t('auth.login_title')}
           </h1>
           <p className="text-[13px] font-bold uppercase tracking-widest text-foreground-muted">
-            Join Our Exclusive Circle
+            {t('auth.exclusive_circle')}
           </p>
         </div>
 
@@ -62,7 +64,7 @@ export default function RegisterPage() {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-[11px] font-black text-foreground-muted uppercase tracking-widest mb-2 ml-1">Full Name</label>
+            <label className="block text-[11px] font-black text-foreground-muted uppercase tracking-widest mb-2 ml-1">{t('auth.name_label')}</label>
             <input
               type="text"
               required
@@ -74,7 +76,7 @@ export default function RegisterPage() {
           </div>
           
           <div>
-            <label className="block text-[11px] font-black text-foreground-muted uppercase tracking-widest mb-2 ml-1">Email Address</label>
+            <label className="block text-[11px] font-black text-foreground-muted uppercase tracking-widest mb-2 ml-1">{t('auth.email_label')}</label>
             <input
               type="email"
               required
@@ -86,7 +88,7 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label className="block text-[11px] font-black text-foreground-muted uppercase tracking-widest mb-2 ml-1">Phone Number</label>
+            <label className="block text-[11px] font-black text-foreground-muted uppercase tracking-widest mb-2 ml-1">{t('auth.phone_label')}</label>
             <input
               type="tel"
               className="w-full"
@@ -97,7 +99,7 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label className="block text-[11px] font-black text-foreground-muted uppercase tracking-widest mb-2 ml-1">Secret Key (Password)</label>
+            <label className="block text-[11px] font-black text-foreground-muted uppercase tracking-widest mb-2 ml-1">{t('auth.secret_key_label')}</label>
             <input
               type="password"
               required
@@ -113,14 +115,14 @@ export default function RegisterPage() {
             disabled={loading}
             className="w-full bg-foreground text-white py-4 rounded-full font-black uppercase text-[12px] tracking-widest hover:bg-foreground/90 transition-all shadow-lg active:scale-95 disabled:opacity-50 mt-4"
           >
-            {loading ? 'Creating Account...' : 'Register Now'}
+            {loading ? t('auth.processing') : t('auth.create_account')}
           </button>
         </form>
 
         <p className="mt-10 text-center text-[12px] font-bold text-foreground-muted">
-          Already a member?{' '}
+          {t('auth.already_have_account')}{' '}
           <Link href="/login" className="text-accent hover:underline">
-            Sign In here
+            {t('auth.login_here')}
           </Link>
         </p>
       </div>
