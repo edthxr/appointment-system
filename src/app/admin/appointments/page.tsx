@@ -189,32 +189,53 @@ function AppointmentsContent() {
     {
       header: t('appointments.col_control'),
       accessorKey: 'actions',
-      className: 'text-right',
+      className: 'text-center whitespace-nowrap',
       cell: (a) => (
-        <div className="flex justify-end gap-6">
+        <div className="flex justify-center gap-2.5">
+          {/* Details - Premium Glass Eye */}
           <button 
             onClick={() => {
               setSelectedAppointment(a);
               setIsDrawerOpen(true);
             }}
-            className="text-[10px] font-black text-accent hover:text-foreground uppercase tracking-widest transition-all hover:scale-110"
+            className="group/tip relative flex items-center justify-center w-9 h-9 rounded-[14px] bg-white/40 backdrop-blur-md border border-white/60 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] hover:bg-white hover:border-accent/40 hover:shadow-[0_8px_20px_-6px_rgba(212,175,55,0.3)] hover:-translate-y-0.5 transition-all duration-500 active:scale-95 cursor-pointer"
           >
-            {t('common.details')}
+            <svg className="w-[17px] h-[17px] text-accent/80 group-hover/tip:text-accent transition-colors duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+            <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-xl bg-foreground/90 backdrop-blur-xl text-white text-[9px] font-black uppercase tracking-[0.2em] whitespace-nowrap opacity-0 scale-90 translate-x-2 group-hover/tip:opacity-100 group-hover/tip:scale-100 group-hover/tip:translate-x-0 transition-all duration-500 pointer-events-none shadow-2xl border border-white/10 z-20">
+              {t('common.details')}
+            </span>
           </button>
+
+          {/* Confirm - Premium Glass Check */}
           {a.status === 'pending' && (
             <button 
               onClick={() => handleUpdateStatus(a.id, 'confirmed')}
-              className="text-[10px] font-black text-green-600 hover:text-green-800 uppercase tracking-widest transition-all hover:scale-110"
+              className="group/tip relative flex items-center justify-center w-9 h-9 rounded-[14px] bg-white/40 backdrop-blur-md border border-white/60 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] hover:bg-white hover:border-emerald-500/40 hover:shadow-[0_8px_20px_-6px_rgba(34,197,94,0.25)] hover:-translate-y-0.5 transition-all duration-500 active:scale-95 cursor-pointer"
             >
-              {t('appointments.verify')}
+              <svg className="w-[16px] h-[16px] text-emerald-500/80 group-hover/tip:text-emerald-600 transition-colors duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M5 13l4 4L19 7" />
+              </svg>
+              <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-xl bg-foreground/90 backdrop-blur-xl text-white text-[9px] font-black uppercase tracking-[0.2em] whitespace-nowrap opacity-0 scale-90 translate-x-2 group-hover/tip:opacity-100 group-hover/tip:scale-100 group-hover/tip:translate-y-0 transition-all duration-500 pointer-events-none shadow-2xl border border-white/10 z-20">
+                {t('appointments.verify')}
+              </span>
             </button>
           )}
+
+          {/* Cancel - Premium Glass X */}
           {a.status !== 'cancelled' && a.status !== 'completed' && (
             <button 
               onClick={() => handleUpdateStatus(a.id, 'cancelled')}
-              className="text-[10px] font-black text-foreground-muted hover:text-red-500 uppercase tracking-widest transition-all hover:scale-110"
+              className="group/tip relative flex items-center justify-center w-9 h-9 rounded-[14px] bg-white/40 backdrop-blur-md border border-white/60 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] hover:bg-white hover:border-red-400/40 hover:shadow-[0_8px_20px_-6px_rgba(239,68,68,0.2)] hover:-translate-y-0.5 transition-all duration-500 active:scale-95 cursor-pointer"
             >
-              {t('appointments.void')}
+              <svg className="w-[15px] h-[15px] text-foreground-muted/50 group-hover/tip:text-red-500 transition-colors duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-xl bg-foreground/90 backdrop-blur-xl text-white text-[9px] font-black uppercase tracking-[0.2em] whitespace-nowrap opacity-0 scale-90 translate-x-2 group-hover/tip:opacity-100 group-hover/tip:scale-100 group-hover/tip:translate-x-0 transition-all duration-500 pointer-events-none shadow-2xl border border-white/10 z-20">
+                {t('appointments.void')}
+              </span>
             </button>
           )}
         </div>

@@ -79,7 +79,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   const showBrowserNotification = (notif: Notification) => {
     if (preferences.browserNotificationsEnabled && Notification.permission === 'granted') {
-      const n = new Notification(t('notifications.type_booking_created'), {
+      const typeLabel = t(`notifications.type_${notif.type.toLowerCase()}`);
+      const n = new Notification(typeLabel !== `notifications.type_${notif.type.toLowerCase()}` ? typeLabel : t('notifications.new_booking_alert'), {
         body: notif.message,
         icon: '/logo.png', // Fallback, update if available
       });
@@ -114,34 +115,33 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         if (latestNotifications.length > 0) {
           const newest = latestNotifications[0];
           
-          // Only show notification if it's truly new for this session
-          if (newest.id !== lastCheckedId.current) {
-            // If this isn't the first check of the session
-            if (lastCheckedId.current !== null) {
+          if (lastCheckedId.current !== null && newest.id !== lastCheckedId.current) {
+            // Find notifications that are newer than our last check
+            const newIndex = latestNotifications.findIndex((n: any) => n.id === lastCheckedId.current);
+            const trulyNewNotifications = newIndex === -1 ? latestNotifications : latestNotifications.slice(0, newIndex);
+            
+            if (trulyNewNotifications.length > 0) {
               const seenIds = JSON.parse(sessionStorage.getItem(SEEN_NOTIFICATIONS_KEY) || '[]');
-              
-              // Filter out notifications we've already toasted in this session
-              const newToasts = latestNotifications
-                .filter((n: any) => !seenIds.includes(n.id))
-                .slice(0, 3); // Max 3 new toasts
+              const untiedToasts = trulyNewNotifications.filter((n: any) => !seenIds.includes(n.id)).slice(0, 3);
 
-              if (newToasts.length > 0) {
+              if (untiedToasts.length > 0) {
                 setToasts(prev => {
-                  const combined = [...newToasts, ...prev].slice(0, 3);
+                  const combined = [...untiedToasts, ...prev].slice(0, 3);
                   return combined;
                 });
                 
-                // Track seen IDs
-                const updatedSeenIds = [...seenIds, ...newToasts.map((n: any) => n.id)];
+                const updatedSeenIds = [...seenIds, ...untiedToasts.map((n: any) => n.id)];
                 sessionStorage.setItem(SEEN_NOTIFICATIONS_KEY, JSON.stringify(updatedSeenIds));
 
                 playSound();
-                newToasts.forEach(showBrowserNotification);
+                untiedToasts.forEach(showBrowserNotification);
               }
             }
-            lastCheckedId.current = newest.id;
           }
+          // Always update lastCheckedId to the newest we know about
+          lastCheckedId.current = newest.id;
         } else {
+           // If no unread, we still need a baseline for 'new'
            lastCheckedId.current = 'empty';
         }
       }
@@ -221,7 +221,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
                 </div>
                 <div className="flex-1">
                   <div className="flex justify-between items-start mb-1">
-                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-accent/80">{t('notifications.incoming_queue') || 'Incoming Queue'}</p>
+                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-accent/80">{t('notifications.alert_title') || 'แจ้งเตือนระบบ'}</p>
                     <button 
                       onClick={(e) => { e.stopPropagation(); dismissToast(notif.id); }}
                       className="text-foreground-muted hover:text-foreground p-1 -mt-1 -mr-1"
@@ -229,7 +229,11 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
                   </div>
-                  <p className="text-sm font-bold text-foreground leading-tight mb-1">{t('notifications.new_booking_alert') || 'มีรายการจองใหม่เข้ามา'}</p>
+                  <p className="text-sm font-bold text-foreground leading-tight mb-1">
+                    {t(`notifications.type_${notif.type.toLowerCase()}`) !== `notifications.type_${notif.type.toLowerCase()}` 
+                      ? t(`notifications.type_${notif.type.toLowerCase()}`) 
+                      : t('notifications.new_booking_alert')}
+                  </p>
                   <p className="text-[12px] text-foreground-muted line-clamp-2 leading-relaxed">
                     {notif.message}
                   </p>

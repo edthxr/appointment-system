@@ -39,12 +39,15 @@ export default function DataTable<T extends { id: string | number }>({
                 <th
                   key={idx}
                   scope="col"
-                  className={`px-8 py-5 text-left text-[11px] font-black text-foreground-muted uppercase tracking-[0.2em] select-none ${
+                  className={`px-8 py-5 text-[11px] font-black text-foreground-muted uppercase tracking-[0.2em] select-none ${
                     column.sortable ? 'cursor-pointer hover:text-accent transition-colors group' : ''
-                  } ${column.className || ''}`}
+                  } ${!column.className?.includes('text-') ? 'text-left' : ''} ${column.className || ''}`}
                   onClick={() => column.sortable && onSort?.(column.accessorKey as string)}
                 >
-                  <div className="flex items-center space-x-2">
+                  <div className={`flex items-center space-x-2 ${
+                    column.className?.includes('text-center') ? 'justify-center' : 
+                    column.className?.includes('text-right') ? 'justify-end' : ''
+                  }`}>
                     <span>{column.header}</span>
                     {column.sortable && (
                       <span className="flex flex-col -space-y-1 opacity-0 group-hover:opacity-100 transition-opacity">

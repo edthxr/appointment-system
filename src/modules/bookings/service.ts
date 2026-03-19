@@ -91,11 +91,11 @@ export class BookingService {
       // Also send system notification for Admin Toast
       await this.notificationService.send({
         clinicId: data.clinicId,
-        userId: data.userId, // Link to the customer who booked
+        // userId: data.userId, // REMOVED: Link to the customer who booked shouldn't mean they see it
         appointmentId: booking.id,
         channel: 'system',
         type: 'booking_created',
-        message: `🔔 รายการจองใหม่: คุณ ${user.name} ได้จอง ${service.name} วันที่ ${format(data.appointmentDate, 'dd MMM')} เวลา ${data.startTime}`
+        message: `คุณ ${user.name} ได้จอง ${service.name} วันที่ ${format(data.appointmentDate, 'dd MMM')} เวลา ${data.startTime}`
       });
     }
 
@@ -151,11 +151,11 @@ export class BookingService {
       // Also send system notification for Admin (internal log)
       await this.notificationService.send({
         clinicId,
-        userId: user.id,
+        // userId: user.id, // REMOVED: System logs shouldn't be tied to the customer's inbox
         appointmentId: id,
         channel: 'system',
         type,
-        message: `[System] ${message} (Customer: ${user.name})`
+        message: `${message} (ลูกค้า: ${user.name})`
       });
     }
 

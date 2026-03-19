@@ -1,6 +1,6 @@
 import { db } from '@/db/client';
 import { notifications } from '@/db/schema';
-import { eq, and, desc, count } from 'drizzle-orm';
+import { eq, and, desc, count, not } from 'drizzle-orm';
 import { INotificationRepository } from './repository';
 import { Notification } from './service';
 import { PaginatedResult } from '@/lib/types';
@@ -26,7 +26,12 @@ export class DbNotificationRepository implements INotificationRepository {
     if (!db) throw new Error('Database not connected');
     
     const offset = (page - 1) * limit;
-    const whereClause = and(eq(notifications.userId, userId), eq(notifications.clinicId, clinicId));
+    const whereClause = and(
+      eq(notifications.userId, userId), 
+      eq(notifications.clinicId, clinicId),
+      // Prevent system notifications (Admin only) from showing in customer feed
+      not(eq(notifications.channel, 'system' as any)) 
+    );
     
     const [data, totalResult] = await Promise.all([
       db.query.notifications.findMany({
