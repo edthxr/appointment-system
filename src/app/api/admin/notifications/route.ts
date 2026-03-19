@@ -16,11 +16,20 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const page = parseInt(searchParams.get('page') || '1');
   const limit = parseInt(searchParams.get('limit') || '10');
+  
+  const isRead = searchParams.get('isRead');
+  const type = searchParams.get('type');
+  const channel = searchParams.get('channel');
+  
+  const filters: any = {};
+  if (isRead !== null) filters.isRead = isRead === 'true';
+  if (type) filters.type = type;
+  if (channel) filters.channel = channel;
 
   try {
     const notificationRepo = registry.notificationRepo;
     const [result, unreadCount] = await Promise.all([
-      notificationRepo.findAll(activeClinic.id, page, limit),
+      notificationRepo.findAll(activeClinic.id, page, limit, filters),
       notificationRepo.getUnreadCount(activeClinic.id)
     ]);
 

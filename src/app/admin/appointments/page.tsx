@@ -71,8 +71,12 @@ function AppointmentsContent() {
         const fetchOne = async () => {
           try {
             const res = await fetch(`/api/bookings/${bookingIdParam}?clinicSlug=${clinicSlug}`);
+            if (!res.ok) {
+              console.warn(`Booking fetch failed: ${res.status}`);
+              return;
+            }
             const data = await res.json();
-            if (data.success) {
+            if (data.success && data.data) {
               setSelectedAppointment(data.data);
               setIsDrawerOpen(true);
             }
@@ -103,7 +107,10 @@ function AppointmentsContent() {
       });
       const data = await res.json();
       if (data.success) {
-        setAppointments(appointments.map(a => a.id === id ? { ...a, status } : a));
+        setAppointments(prev => prev.map(a => a.id === id ? { ...a, status } : a));
+        if (selectedAppointment?.id === id) {
+          setSelectedAppointment({ ...selectedAppointment, status });
+        }
       } else {
         alert(data.error || 'ไม่สามารถอัปเดตสถานะได้');
       }
@@ -158,11 +165,13 @@ function AppointmentsContent() {
       sortable: true,
       cell: (a) => (
         <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
-          a.status === 'confirmed' ? 'bg-green-50 text-green-600 border-green-100' : 
-          a.status === 'cancelled' ? 'bg-red-50 text-red-600 border-red-100' : 
-          'bg-yellow-50 text-yellow-600 border-yellow-100'
+          a.status === 'confirmed' ? 'bg-green-50 text-green-600 border-green-100 shadow-sm shadow-green-100' : 
+          a.status === 'completed' ? 'bg-blue-50 text-blue-600 border-blue-100 shadow-sm shadow-blue-100' :
+          a.status === 'cancelled' ? 'bg-red-50 text-red-600 border-red-100 opacity-60' : 
+          'bg-yellow-50 text-yellow-600 border-yellow-100 animate-pulse'
         }`}>
           {a.status === 'confirmed' ? 'Verified' : 
+           a.status === 'completed' ? 'Finished' :
            a.status === 'cancelled' ? 'Voided' : 'Pending'}
         </span>
       )
@@ -190,7 +199,7 @@ function AppointmentsContent() {
               Verify
             </button>
           )}
-          {a.status !== 'cancelled' && (
+          {a.status !== 'cancelled' && a.status !== 'completed' && (
             <button 
               onClick={() => handleUpdateStatus(a.id, 'cancelled')}
               className="text-[10px] font-black text-foreground-muted hover:text-red-500 uppercase tracking-widest transition-all hover:scale-110"
@@ -271,88 +280,118 @@ function AppointmentsContent() {
 
       {/* Appointment Detail Drawer */}
       {isDrawerOpen && selectedAppointment && (
-        <div className="fixed inset-0 z-[100] flex justify-end">
-          <div className="fixed inset-0 bg-black/20 backdrop-blur-sm animate-in fade-in duration-300" onClick={closeDrawer} />
-          <div className="relative w-full max-w-lg bg-white h-full shadow-2xl animate-in slide-in-from-right duration-500 overflow-y-auto">
-            <div className="p-8">
-              <div className="flex justify-between items-center mb-10">
+        <div className="fixed inset-0 z-50 flex justify-end">
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300" onClick={closeDrawer} />
+          <div className="relative w-full max-w-xl bg-white h-full shadow-2xl animate-in slide-in-from-right duration-500 overflow-y-auto">
+            <div className="p-10">
+              <div className="flex justify-between items-center mb-12">
                 <button onClick={closeDrawer} className="p-2 -ml-2 text-foreground-muted hover:text-foreground transition-colors group">
                   <svg className="w-6 h-6 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
                 </button>
                 <div className={cn(
-                  "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border",
+                  "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm",
                   selectedAppointment.status === 'confirmed' ? 'bg-green-50 text-green-600 border-green-100' : 
+                  selectedAppointment.status === 'completed' ? 'bg-blue-50 text-blue-600 border-blue-100' :
                   selectedAppointment.status === 'cancelled' ? 'bg-red-50 text-red-600 border-red-100' : 
                   'bg-yellow-50 text-yellow-600 border-yellow-100'
                 )}>
-                  {selectedAppointment.status}
+                  {selectedAppointment.status === 'confirmed' ? 'Verified' : 
+                   selectedAppointment.status === 'completed' ? 'Finished' :
+                   selectedAppointment.status === 'cancelled' ? 'Voided' : 'Pending Review'}
                 </div>
               </div>
 
               <div className="space-y-12">
                 <section>
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-accent mb-4">Patient Information</p>
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="w-14 h-14 rounded-2xl bg-foreground text-white flex items-center justify-center text-xl font-black">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-accent mb-4">Patient Profile</p>
+                  <div className="flex items-center gap-6 mb-8 group">
+                    <div className="w-16 h-16 rounded-3xl bg-foreground text-white flex items-center justify-center text-2xl font-black shadow-xl group-hover:scale-105 transition-transform duration-500">
                       {selectedAppointment.user?.name.charAt(0).toUpperCase()}
                     </div>
                     <div>
-                      <h2 className="text-xl font-black text-foreground">{selectedAppointment.user?.name}</h2>
-                      <p className="text-sm text-foreground-muted">{selectedAppointment.user?.email}</p>
+                      <h2 className="text-2xl font-black text-foreground tracking-tight">{selectedAppointment.user?.name}</h2>
+                      <div className="flex flex-col gap-1 mt-1">
+                        <p className="text-sm text-foreground-muted flex items-center gap-2">
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                          {selectedAppointment.user?.email}
+                        </p>
+                        <p className="text-sm text-foreground-muted flex items-center gap-2">
+                           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                           {selectedAppointment.phoneNumber || 'Not provided'}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </section>
 
-                <section className="grid grid-cols-2 gap-8">
+                <section className="grid grid-cols-2 gap-x-8 gap-y-10 bg-muted/20 p-8 rounded-[40px] border border-border-ios/20">
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-accent mb-2">Service</p>
-                    <p className="text-sm font-bold text-foreground">{selectedAppointment.service?.name}</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-accent/60 mb-2">Selected Treatment</p>
+                    <p className="text-sm font-black text-foreground uppercase tracking-tight">{selectedAppointment.service?.name}</p>
+                    <p className="text-[11px] text-foreground-muted mt-1">{selectedAppointment.service?.durationMin} minute duration</p>
                   </div>
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-accent mb-2">Duration</p>
-                    <p className="text-sm font-bold text-foreground">{selectedAppointment.service?.durationMin} mins</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-accent/60 mb-2">Clinic Branch</p>
+                    <p className="text-sm font-black text-foreground uppercase tracking-tight">{selectedAppointment.clinic?.name || 'Main Branch'}</p>
+                    <p className="text-[11px] text-foreground-muted mt-1 uppercase tracking-widest">{selectedAppointment.clinicSlug}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-accent mb-2">Date</p>
-                    <p className="text-sm font-bold text-foreground">{format(new Date(selectedAppointment.appointmentDate), 'EEEE, dd MMM yyyy')}</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-accent/60 mb-2">Visit Schedule</p>
+                    <p className="text-sm font-black text-foreground">{format(new Date(selectedAppointment.appointmentDate), 'EEEE, dd MMM yyyy')}</p>
+                    <p className="text-[11px] font-bold text-accent uppercase tracking-[0.2em] mt-1">{selectedAppointment.startTime} – {selectedAppointment.endTime}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-accent mb-2">Time Slot</p>
-                    <p className="text-sm font-bold text-foreground">{selectedAppointment.startTime} – {selectedAppointment.endTime}</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-accent/60 mb-2">Registered On</p>
+                    <p className="text-sm font-bold text-foreground">{format(new Date(selectedAppointment.createdAt), 'dd MMM yyyy')}</p>
+                    <p className="text-[11px] text-foreground-muted mt-1">{format(new Date(selectedAppointment.createdAt), 'HH:mm:ss')}</p>
                   </div>
                 </section>
 
                 <section>
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-accent mb-2">Notes from Patient</p>
-                  <div className="bg-muted/50 p-6 rounded-3xl border border-border-ios/50">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-accent mb-4">Treatment Objective / Notes</p>
+                  <div className="bg-white p-6 rounded-3xl border border-border-ios/50 shadow-inner">
                     <p className="text-sm text-foreground italic leading-relaxed">
-                      {selectedAppointment.note || "No additional notes provided."}
+                      {selectedAppointment.note || "No specific objectives or notes specified for this appointment."}
                     </p>
                   </div>
                 </section>
 
-                <section className="pt-12 border-t border-border-ios/30 flex gap-4">
-                  {selectedAppointment.status === 'pending' && (
-                    <button 
-                      onClick={() => handleUpdateStatus(selectedAppointment.id, 'confirmed')}
-                      className="flex-1 bg-foreground text-white py-4 rounded-2xl text-[12px] font-black uppercase tracking-widest hover:bg-foreground/80 transition-all shadow-xl shadow-foreground/20 active:scale-95"
-                    >
-                      Verify Appointment
-                    </button>
-                  )}
+                <section className="pt-8 flex flex-col gap-4">
+                  <div className="flex gap-4">
+                    {selectedAppointment.status === 'pending' && (
+                      <button 
+                        onClick={() => handleUpdateStatus(selectedAppointment.id, 'confirmed')}
+                        className="flex-1 bg-foreground text-white py-5 rounded-3xl text-[12px] font-black uppercase tracking-widest hover:bg-accent transition-all shadow-2xl active:scale-95 flex items-center justify-center gap-2"
+                      >
+                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                        Verify Appointment
+                      </button>
+                    )}
+                    {selectedAppointment.status === 'confirmed' && (
+                      <button 
+                        onClick={() => handleUpdateStatus(selectedAppointment.id, 'completed')}
+                        className="flex-1 bg-blue-600 text-white py-5 rounded-3xl text-[12px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-2xl active:scale-95 flex items-center justify-center gap-2"
+                      >
+                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        Mark as Completed
+                      </button>
+                    )}
+                  </div>
+                  
                   {selectedAppointment.status !== 'cancelled' && (
                     <button 
                       onClick={() => handleUpdateStatus(selectedAppointment.id, 'cancelled')}
-                      className="flex-1 border border-border-ios py-4 rounded-2xl text-[12px] font-black uppercase tracking-widest hover:bg-red-50 hover:text-red-600 hover:border-red-100 transition-all active:scale-95"
+                      className="w-full border border-border-ios/40 text-foreground-muted py-4 rounded-3xl text-[11px] font-black uppercase tracking-widest hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all active:scale-95"
                     >
-                      Void Appointment
+                      Void / Cancel Appointment
                     </button>
                   )}
                 </section>
 
-                <p className="text-center text-[9px] font-bold text-foreground-muted uppercase tracking-widest">
-                  Booking ID: {selectedAppointment.id}
-                </p>
+                <div className="pt-8 border-t border-border-ios/10 flex flex-col items-center gap-1 opacity-40">
+                  <p className="text-[9px] font-bold text-foreground-muted uppercase tracking-[0.3em]">System Record Hash</p>
+                  <p className="text-[8px] font-mono text-foreground-muted truncate max-w-xs">{selectedAppointment.id}</p>
+                </div>
               </div>
             </div>
           </div>

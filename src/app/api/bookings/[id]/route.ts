@@ -10,6 +10,40 @@ import { getClinicBySlug } from '@/lib/tenant';
 
 const bookingService = registry.bookingService;
 
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const session = await getSession();
+    if (!session) {
+      return apiResponse.error('กรุณาเข้าสู่ระบบ', 401);
+    }
+
+    const { searchParams } = new URL(req.url);
+    const clinicSlug = searchParams.get('clinicSlug');
+
+    if (!clinicSlug) {
+      return apiResponse.error('clinicSlug is required', 400);
+    }
+
+    const clinic = await getClinicBySlug(clinicSlug);
+    if (!clinic) {
+      return apiResponse.error('Clinic not found', 404);
+    }
+
+    const booking = await bookingService.getById(id, clinic.id);
+    if (!booking) {
+      return apiResponse.error('Booking not found', 404);
+    }
+
+    return apiResponse.success(booking);
+  } catch (error: any) {
+    return apiResponse.error(error.message || 'Failed to fetch booking', 500);
+  }
+}
+
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }

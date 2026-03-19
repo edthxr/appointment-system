@@ -14,6 +14,10 @@ export class BookingService {
     private userRepo: IUserRepository
   ) {}
 
+  async getById(id: string, clinicId: string) {
+    return this.bookingRepo.findById(id, clinicId);
+  }
+
   async getAvailableSlots(date: Date, serviceId: string, clinicId: string) {
     const service = await this.serviceRepo.findById(serviceId, clinicId);
     if (!service) throw new Error('Service not found');

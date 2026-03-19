@@ -49,14 +49,28 @@ export class DbNotificationRepository implements INotificationRepository {
     };
   }
 
-  async findAll(clinicId: string, page = 1, limit = 10): Promise<PaginatedResult<Notification>> {
+  async findAll(clinicId: string, page = 1, limit = 10, filters?: { isRead?: boolean, type?: string, channel?: string }): Promise<PaginatedResult<Notification>> {
     if (!db) throw new Error('Database not connected');
     
     const offset = (page - 1) * limit;
     
+    const conditions = [eq(notifications.clinicId, clinicId)];
+    if (filters) {
+      if (filters.isRead !== undefined) {
+        conditions.push(eq(notifications.isRead, filters.isRead));
+      }
+      if (filters.type) {
+        conditions.push(eq(notifications.type, filters.type as any));
+      }
+      if (filters.channel) {
+        conditions.push(eq(notifications.channel, filters.channel as any));
+      }
+    }
+    const whereClause = and(...conditions);
+    
     const [data, totalResult] = await Promise.all([
       db.query.notifications.findMany({
-        where: eq(notifications.clinicId, clinicId),
+        where: whereClause,
         limit,
         offset,
         orderBy: [desc(notifications.createdAt)],
@@ -65,7 +79,7 @@ export class DbNotificationRepository implements INotificationRepository {
           appointment: true
         }
       }),
-      db.select({ count: count() }).from(notifications).where(eq(notifications.clinicId, clinicId))
+      db.select({ count: count() }).from(notifications).where(whereClause)
     ]);
     
     const total = Number(totalResult[0]?.count || 0);
