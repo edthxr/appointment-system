@@ -47,9 +47,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const { t } = useTranslation();
   const lastCheckedId = useRef<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const lastActionTime = useRef<number>(0);
   const router = useRouter();
 
-  // Load preferences and seen IDs
+  // Load preferences
   useEffect(() => {
     const savedPrefs = localStorage.getItem(PREFERENCES_KEY);
     if (savedPrefs) {
@@ -82,11 +83,11 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       const typeLabel = t(`notifications.type_${notif.type.toLowerCase()}`);
       const n = new Notification(typeLabel !== `notifications.type_${notif.type.toLowerCase()}` ? typeLabel : t('notifications.new_booking_alert'), {
         body: notif.message,
-        icon: '/logo.png', // Fallback, update if available
+        icon: '/logo.png',
       });
       n.onclick = () => {
         window.focus();
-        router.push(`/admin/appointments?bookingId=${notif.appointmentId}`);
+        router.push(`/admin/notifications?notificationId=${notif.id}`);
       };
     }
   };
@@ -102,46 +103,48 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   };
 
   const fetchUnread = async () => {
+    // If we just performed a manual action, ignore polling for 3 seconds 
+    // to give database time to settle and let our direct API response take precedence.
+    if (Date.now() - lastActionTime.current < 3000) {
+      return;
+    }
+
     try {
-      const res = await fetch('/api/admin/notifications?limit=5');
+      const res = await fetch('/api/admin/notifications?limit=10');
       const result = await res.json();
       
       if (result.success) {
-        const newUnreadCount = result.metadata.unreadCount;
-        setUnreadCount(newUnreadCount);
+        // Double-check lock again because the fetch itself took time
+        if (Date.now() - lastActionTime.current < 3000) return;
+
+        setUnreadCount(result.metadata.unreadCount);
         
-        const latestNotifications = result.data.filter((n: any) => !n.isRead && n.channel === 'system');
+        const unreadItems = result.data.filter((n: any) => !n.isRead);
+        const latestSystemNotifications = unreadItems.filter((n: any) => n.channel === 'system');
         
-        if (latestNotifications.length > 0) {
-          const newest = latestNotifications[0];
+        if (latestSystemNotifications.length > 0) {
+          const newest = latestSystemNotifications[0];
           
           if (lastCheckedId.current !== null && newest.id !== lastCheckedId.current) {
-            // Find notifications that are newer than our last check
-            const newIndex = latestNotifications.findIndex((n: any) => n.id === lastCheckedId.current);
-            const trulyNewNotifications = newIndex === -1 ? latestNotifications : latestNotifications.slice(0, newIndex);
+            const newIndex = latestSystemNotifications.findIndex((n: any) => n.id === lastCheckedId.current);
+            const trulyNew = newIndex === -1 ? latestSystemNotifications : latestSystemNotifications.slice(0, newIndex);
             
-            if (trulyNewNotifications.length > 0) {
+            if (trulyNew.length > 0) {
               const seenIds = JSON.parse(sessionStorage.getItem(SEEN_NOTIFICATIONS_KEY) || '[]');
-              const untiedToasts = trulyNewNotifications.filter((n: any) => !seenIds.includes(n.id)).slice(0, 3);
+              const newToasts = trulyNew.filter((n: any) => !seenIds.includes(n.id)).slice(0, 3);
 
-              if (untiedToasts.length > 0) {
-                setToasts(prev => {
-                  const combined = [...untiedToasts, ...prev].slice(0, 3);
-                  return combined;
-                });
-                
-                const updatedSeenIds = [...seenIds, ...untiedToasts.map((n: any) => n.id)];
+              if (newToasts.length > 0) {
+                setToasts(prev => [...newToasts, ...prev].slice(0, 3));
+                const updatedSeenIds = [...seenIds, ...newToasts.map((n: any) => n.id)];
                 sessionStorage.setItem(SEEN_NOTIFICATIONS_KEY, JSON.stringify(updatedSeenIds));
 
                 playSound();
-                untiedToasts.forEach(showBrowserNotification);
+                newToasts.forEach(showBrowserNotification);
               }
             }
           }
-          // Always update lastCheckedId to the newest we know about
           lastCheckedId.current = newest.id;
         } else {
-           // If no unread, we still need a baseline for 'new'
            lastCheckedId.current = 'empty';
         }
       }
@@ -157,26 +160,42 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   }, [preferences.browserNotificationsEnabled, preferences.soundEnabled]);
 
   const markAsRead = async (id: string) => {
+    lastActionTime.current = Date.now();
+    
     // Optimistic update
     setUnreadCount(prev => Math.max(0, prev - 1));
     setToasts(prev => prev.filter(t => t.id !== id));
     
     try {
-      await fetch(`/api/admin/notifications/${id}/read`, { method: 'PATCH' });
-      // We don't necessarily need to re-fetch immediately as we did an optimistic update
+      const res = await fetch(`/api/admin/notifications/${id}/read`, { method: 'PATCH' });
+      const result = await res.json();
+      
+      if (result.success && typeof result.count === 'number') {
+        // Use the absolute truth from the server immediately
+        lastActionTime.current = Date.now(); 
+        setUnreadCount(result.count);
+      }
     } catch (error) {
       console.error('Failed to mark as read:', error);
-      fetchUnread(); // Rollback if error
+      fetchUnread(); 
     }
   };
 
   const markAllAsRead = async () => {
+    lastActionTime.current = Date.now();
+    
     // Optimistic update
     setUnreadCount(0);
     setToasts([]);
     
     try {
-      await fetch('/api/admin/notifications/read-all', { method: 'PATCH' });
+      const res = await fetch('/api/admin/notifications/read-all', { method: 'PATCH' });
+      const result = await res.json();
+      
+      if (result.success && typeof result.count === 'number') {
+        lastActionTime.current = Date.now();
+        setUnreadCount(result.count);
+      }
     } catch (error) {
       console.error('Failed to mark all as read:', error);
       fetchUnread();
@@ -196,7 +215,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }}>
       {children}
       
-      {/* Floating Toast Notification Stack */}
       <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3 items-end pointer-events-none">
         {toasts.map((notif, idx) => (
           <div 
@@ -207,7 +225,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             <div 
               onClick={() => {
                 markAsRead(notif.id);
-                router.push(`/admin/appointments?bookingId=${notif.appointmentId}`);
+                router.push(`/admin/notifications?notificationId=${notif.id}`);
               }}
               className="bg-white/95 backdrop-blur-xl border border-accent/10 shadow-2xl rounded-3xl p-5 w-[340px] cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-all group relative overflow-hidden"
             >
@@ -257,4 +275,4 @@ export const useNotifications = () => {
     throw new Error('useNotifications must be used within a NotificationProvider');
   }
   return context;
-};
+}

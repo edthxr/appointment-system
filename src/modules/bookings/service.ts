@@ -136,6 +136,9 @@ export class BookingService {
       if (status === 'cancelled') {
         type = 'booking_cancelled';
         message = `การจอง ${service.name} ของคุณถูกยกเลิกแล้ว`;
+      } else if (status === 'completed') {
+        type = 'booking_completed';
+        message = `การจอง ${service.name} ของคุณเสร็จสิ้นแล้ว`;
       }
 
       await this.notificationService.send({
@@ -149,15 +152,20 @@ export class BookingService {
       });
 
       // Also send system notification for Admin (internal log)
+      let systemMessage = `การจอง ${service.name} ของลูกค้าได้รับการยืนยันแล้ว (ลูกค้า: ${user.name})`;
+      if (status === 'cancelled') {
+        systemMessage = `การจอง ${service.name} ของลูกค้าถูกยกเลิกแล้ว (ลูกค้า: ${user.name})`;
+      } else if (status === 'completed') {
+        systemMessage = `การจอง ${service.name} ของลูกค้าเสร็จสิ้นแล้ว (ลูกค้า: ${user.name})`;
+      }
+
       await this.notificationService.send({
         clinicId,
-        userId: user.id, // ADDED: Attribution for admin view
+        userId: user.id,
         appointmentId: id,
         channel: 'system',
         type,
-        message: status === 'cancelled' 
-          ? `การจอง ${service.name} ของลูกค้าถูกยกเลิกแล้ว (ลูกค้า: ${user.name})`
-          : `การจอง ${service.name} ของลูกค้าได้รับการยืนยันแล้ว (ลูกค้า: ${user.name})`
+        message: systemMessage
       });
     }
 

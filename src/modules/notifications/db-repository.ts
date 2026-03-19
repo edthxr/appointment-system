@@ -1,6 +1,6 @@
 import { db } from '@/db/client';
 import { notifications } from '@/db/schema';
-import { eq, and, desc, count, not } from 'drizzle-orm';
+import { eq, and, desc, count, not, sql } from 'drizzle-orm';
 import { INotificationRepository } from './repository';
 import { Notification } from './service';
 import { PaginatedResult } from '@/lib/types';
@@ -104,9 +104,21 @@ export class DbNotificationRepository implements INotificationRepository {
     };
   }
 
-  async markAsRead(id: string): Promise<void> {
+  async markAsRead(id: string, clinicId?: string): Promise<number> {
     if (!db) throw new Error('Database not connected');
-    await db.update(notifications).set({ isRead: true, readAt: new Date() }).where(eq(notifications.id, id));
+    
+    const conditions = [eq(notifications.id, id)];
+    if (clinicId) {
+      conditions.push(eq(notifications.clinicId, clinicId));
+    }
+
+    const result = await db.update(notifications)
+      .set({ isRead: true, readAt: new Date() })
+      .where(and(...conditions))
+      .returning({ id: notifications.id });
+    
+    console.log(`[NotificationRepo] markAsRead id=${id} clinicId=${clinicId} affected=${result.length}`);
+    return result.length;
   }
 
   async markAllAsRead(clinicId: string, userId?: string): Promise<void> {
@@ -118,16 +130,21 @@ export class DbNotificationRepository implements INotificationRepository {
     await db.update(notifications).set({ isRead: true, readAt: new Date() }).where(and(...conditions));
   }
 
-  async getUnreadCount(clinicId: string, userId?: string): Promise<number> {
+  async getUnreadCount(clinicId: string, userId?: string, channel?: string): Promise<number> {
     if (!db) throw new Error('Database not connected');
     const conditions = [
       eq(notifications.clinicId, clinicId), 
       eq(notifications.isRead, false),
-      not(eq(notifications.channel, 'system' as any))
     ];
+    
     if (userId) {
       conditions.push(eq(notifications.userId, userId));
     }
+
+    if (channel) {
+      conditions.push(eq(notifications.channel, channel as any));
+    }
+    
     const [result] = await db.select({ count: count() }).from(notifications).where(and(...conditions));
     return Number(result?.count || 0);
   }

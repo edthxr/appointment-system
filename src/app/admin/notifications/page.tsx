@@ -7,6 +7,7 @@ import { useNotifications } from '@/providers/NotificationProvider';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/providers/LanguageProvider';
+import { useSearchParams, useRouter } from 'next/navigation';
 
 // FALLBACK: subject จาก type เพราะ DB ยังไม่เก็บ emailSubject
 const getSubjectForType = (type: string) => {
@@ -21,12 +22,16 @@ const getSubjectForType = (type: string) => {
 
 export default function AdminNotificationsPage() {
   const { t, locale } = useTranslation();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const notificationIdParam = searchParams.get('notificationId');
+
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterRead, setFilterRead] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
   const [selectedEmailNotif, setSelectedEmailNotif] = useState<any | null>(null);
-  const { markAllAsRead, preferences, updatePreference } = useNotifications();
+  const { markAsRead, markAllAsRead, preferences, updatePreference } = useNotifications();
 
   const dateLocale = locale === 'th' ? th : enUS;
 
@@ -41,6 +46,14 @@ export default function AdminNotificationsPage() {
       const result = await res.json();
       if (result.success) {
         setNotifications(result.data);
+        
+        // Auto-mark as read if deep-linked
+        if (notificationIdParam) {
+          const target = result.data.find((n: any) => n.id === notificationIdParam);
+          if (target && !target.isRead) {
+             markAsRead(target.id);
+          }
+        }
       }
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
@@ -52,6 +65,11 @@ export default function AdminNotificationsPage() {
   useEffect(() => {
     fetchNotifications();
   }, [filterRead, filterType]);
+
+  const handleMarkAsRead = async (id: string) => {
+    await markAsRead(id);
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+  };
 
   const handleMarkAll = async () => {
     await markAllAsRead();
@@ -227,81 +245,87 @@ export default function AdminNotificationsPage() {
                   </td>
                 </tr>
               ) : (
-                notifications.map((notif: any) => (
-                  <tr key={notif.id} className={cn(
-                    "hover:bg-accent/2 transition-colors group relative",
-                    !notif.isRead && "bg-accent/5"
-                  )}>
-                    {/* Timestamp */}
-                    <td className="px-6 py-5">
-                      <div className="flex items-center gap-3">
-                        {!notif.isRead && <div className="w-2 h-2 rounded-full bg-red-500 shrink-0 shadow-sm shadow-red-500/50" />}
-                        <div>
-                          <p className="text-[13px] font-bold text-foreground">{format(new Date(notif.createdAt), 'dd MMM yyyy', { locale: dateLocale })}</p>
-                          <p className="text-[11px] text-foreground-muted opacity-60 font-medium lowercase tracking-tighter">{format(new Date(notif.createdAt), 'HH:mm', { locale: dateLocale })}</p>
+                notifications.map((notif: any) => {
+                  return (
+                    <tr key={notif.id} className={cn(
+                      "hover:bg-accent/2 transition-all duration-500 group relative",
+                      !notif.isRead && "bg-accent/5",
+                      notif.id === notificationIdParam && "bg-accent/10 shadow-[inset_4px_0_0_0_#B4975A] ring-1 ring-accent/10"
+                    )}>
+                      {/* Timestamp */}
+                      <td className="px-6 py-5">
+                        <div className="flex items-center gap-3">
+                          {!notif.isRead && <div className="w-2.5 h-2.5 rounded-full bg-red-500 shrink-0 shadow-[0_0_10px_rgba(239,68,68,0.5)] animate-pulse" />}
+                          <div>
+                            <p className="text-[13px] font-bold text-foreground">{format(new Date(notif.createdAt), 'dd MMM yyyy', { locale: dateLocale })}</p>
+                            <p className="text-[11px] text-foreground-muted opacity-60 font-medium lowercase tracking-tighter">{format(new Date(notif.createdAt), 'HH:mm', { locale: dateLocale })}</p>
+                          </div>
                         </div>
-                      </div>
-                    </td>
+                      </td>
 
-                    {/* Recipient */}
-                    <td className="px-6 py-5">
-                      <p className="text-[13px] font-black text-foreground uppercase tracking-widest">{notif.user?.name || t('appointments.unknown_client')}</p>
-                      {/* FALLBACK: ใช้ email จาก user relation เพราะ DB ยังไม่มี emailTo */}
-                      <p className="text-[11px] text-foreground-muted opacity-60 font-medium italic">{notif.user?.email}</p>
-                    </td>
+                      {/* Recipient */}
+                      <td className="px-6 py-5">
+                        <p className="text-[13px] font-black text-foreground uppercase tracking-widest">{notif.user?.name || t('appointments.unknown_client')}</p>
+                        <p className="text-[11px] text-foreground-muted opacity-60 font-medium italic">{notif.user?.email}</p>
+                      </td>
 
-                    {/* Channel — visual badge */}
-                    <td className="px-6 py-5">
-                      {notif.channel === 'system' ? (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200/60 text-[9px] font-black text-slate-600 uppercase tracking-widest">
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                          {getChannelLabel(notif.channel)}
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent/5 border border-accent/20 text-[9px] font-black text-accent uppercase tracking-widest">
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                          {getChannelLabel(notif.channel)}
-                        </span>
-                      )}
-                    </td>
+                      {/* Channel — visual badge */}
+                      <td className="px-6 py-5">
+                        {notif.channel === 'system' ? (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200/60 text-[9px] font-black text-slate-600 uppercase tracking-widest">
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                            {getChannelLabel(notif.channel)}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent/5 border border-accent/20 text-[9px] font-black text-accent uppercase tracking-widest">
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                            {getChannelLabel(notif.channel)}
+                          </span>
+                        )}
+                      </td>
 
-                    {/* Type */}
-                    <td className="px-6 py-5">
-                      <p className="text-[11px] font-bold text-foreground-muted uppercase tracking-widest opacity-80">{getTypeLabel(notif.type)}</p>
-                    </td>
+                      {/* Type */}
+                      <td className="px-6 py-5">
+                        <p className="text-[11px] font-bold text-foreground-muted uppercase tracking-widest opacity-80">{getTypeLabel(notif.type)}</p>
+                      </td>
 
-                    {/* Status */}
-                    <td className="px-6 py-5">
-                      <div className="flex items-center gap-2">
-                         <div className={`w-1.5 h-1.5 rounded-full ${getStatusColor(notif.status)}`} />
-                         <p className="text-[11px] font-black uppercase tracking-widest text-foreground opacity-80">{getStatusLabel(notif.status)}</p>
-                      </div>
-                    </td>
+                      {/* Status */}
+                      <td className="px-6 py-5">
+                        <div className="flex items-center gap-2">
+                           <div className={`w-1.5 h-1.5 rounded-full ${getStatusColor(notif.status)}`} />
+                           <p className="text-[11px] font-black uppercase tracking-widest text-foreground opacity-80">{getStatusLabel(notif.status)}</p>
+                        </div>
+                      </td>
 
-                    {/* Action — context-aware */}
-                    <td className="px-6 py-5 text-right">
-                      {notif.channel === 'system' ? (
-                        // System → link to appointment
-                        notif.appointmentId && (
-                          <Link 
-                            href={`/admin/appointments?bookingId=${notif.appointmentId}`}
+                      {/* Action — context-aware */}
+                      <td className="px-6 py-5 text-right">
+                        {notif.channel === 'system' ? (
+                          notif.appointmentId && (
+                            <button 
+                              onClick={async () => {
+                                await handleMarkAsRead(notif.id);
+                                router.push(`/admin/appointments?bookingId=${notif.appointmentId}`);
+                              }}
+                              className="text-[10px] font-black uppercase tracking-widest text-accent hover:text-foreground opacity-0 group-hover:opacity-100 transition-all underline underline-offset-8 decoration-accent/30"
+                            >
+                              {t('notifications.view_appointment')}
+                            </button>
+                          )
+                        ) : (
+                          <button
+                            onClick={() => {
+                              setSelectedEmailNotif(notif);
+                              handleMarkAsRead(notif.id);
+                            }}
                             className="text-[10px] font-black uppercase tracking-widest text-accent hover:text-foreground opacity-0 group-hover:opacity-100 transition-all underline underline-offset-8 decoration-accent/30"
                           >
-                            {t('notifications.view_appointment')}
-                          </Link>
-                        )
-                      ) : (
-                        // Email → open detail modal
-                        <button
-                          onClick={() => setSelectedEmailNotif(notif)}
-                          className="text-[10px] font-black uppercase tracking-widest text-accent hover:text-foreground opacity-0 group-hover:opacity-100 transition-all underline underline-offset-8 decoration-accent/30"
-                        >
-                          {t('notifications.view_email_detail')}
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))
+                            {t('notifications.view_email_detail')}
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -347,15 +371,12 @@ export default function AdminNotificationsPage() {
 
             {/* Modal Body */}
             <div className="px-8 py-6 space-y-5">
-              {/* Recipient */}
               <div>
                 <p className="text-[9px] font-black uppercase tracking-widest text-foreground-muted/50 mb-1">{t('notifications.email_detail_recipient')}</p>
                 <p className="text-[14px] font-bold text-foreground">{selectedEmailNotif.user?.name || '-'}</p>
-                {/* FALLBACK: ใช้ email จาก user relation เพราะ DB ยังไม่มี emailTo */}
                 <p className="text-[12px] text-foreground-muted">{selectedEmailNotif.user?.email || '-'}</p>
               </div>
 
-              {/* Type */}
               <div>
                 <p className="text-[9px] font-black uppercase tracking-widest text-foreground-muted/50 mb-1">{t('notifications.email_detail_type')}</p>
                 <span className="inline-flex items-center px-3 py-1 rounded-lg bg-accent/5 border border-accent/15 text-[11px] font-bold text-accent">
@@ -363,23 +384,16 @@ export default function AdminNotificationsPage() {
                 </span>
               </div>
 
-              {/* Subject (FALLBACK) */}
               <div>
-                <p className="text-[9px] font-black uppercase tracking-widest text-foreground-muted/50 mb-1">
-                  Subject
-                  {/* FALLBACK: subject คำนวณจาก type เพราะ DB ยังไม่เก็บ emailSubject */}
-                </p>
+                <p className="text-[9px] font-black uppercase tracking-widest text-foreground-muted/50 mb-1">Subject</p>
                 <p className="text-[13px] font-semibold text-foreground">{getSubjectForType(selectedEmailNotif.type)}</p>
               </div>
 
-              {/* Message */}
               <div>
                 <p className="text-[9px] font-black uppercase tracking-widest text-foreground-muted/50 mb-1">{t('notifications.email_detail_message')}</p>
-                {/* FALLBACK: ใช้ message field เพราะ DB ยังไม่แยก emailBody */}
                 <p className="text-[13px] text-foreground leading-relaxed bg-muted/30 rounded-xl p-4 border border-border-ios/10">{selectedEmailNotif.message}</p>
               </div>
 
-              {/* Status + Timestamps */}
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <p className="text-[9px] font-black uppercase tracking-widest text-foreground-muted/50 mb-1">{t('notifications.email_detail_status')}</p>
@@ -401,7 +415,6 @@ export default function AdminNotificationsPage() {
                   </p>
                 </div>
               </div>
-              {/* TODO Phase 2: แสดง errorMessage เมื่อ DB มี field */}
             </div>
 
             {/* Modal Footer */}

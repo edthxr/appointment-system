@@ -69,7 +69,7 @@ export const notifications = pgTable('notifications', {
   userId: uuid('user_id').references(() => users.id),
   appointmentId: uuid('appointment_id').references(() => appointments.id),
   channel: text('channel', { enum: ['email', 'line', 'system'] }).notNull(),
-  type: text('type', { enum: ['booking_created', 'booking_confirmed', 'booking_cancelled', 'reminder'] }).notNull(),
+  type: text('type', { enum: ['booking_created', 'booking_confirmed', 'booking_cancelled', 'booking_completed', 'reminder'] }).notNull(),
   message: text('message').notNull(),
   status: text('status', { enum: ['pending', 'sent', 'failed'] }).default('pending').notNull(),
   isRead: boolean('is_read').default(false).notNull(),

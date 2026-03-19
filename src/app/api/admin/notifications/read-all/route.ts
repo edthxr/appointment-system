@@ -12,7 +12,7 @@ export async function PATCH() {
     const notificationRepo = registry.notificationRepo;
     await notificationRepo.markAllAsRead(activeClinic.id);
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, count: 0 });
   } catch (error: any) {
     console.error('Error marking all notifications as read:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });

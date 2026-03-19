@@ -5,7 +5,7 @@ export interface Notification {
   userId: string;
   appointmentId?: string | null;
   channel: 'email' | 'line' | 'system';
-  type: 'booking_created' | 'booking_confirmed' | 'booking_cancelled' | 'reminder';
+  type: 'booking_created' | 'booking_confirmed' | 'booking_cancelled' | 'booking_completed' | 'reminder';
   message: string;
   status: 'pending' | 'sent' | 'failed';
   isRead: boolean;

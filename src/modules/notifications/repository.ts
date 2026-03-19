@@ -6,9 +6,9 @@ export interface INotificationRepository {
   update(id: string, data: Partial<Notification>): Promise<Notification>;
   findByUserId(userId: string, clinicId: string, page?: number, limit?: number, filters?: { isRead?: boolean }): Promise<PaginatedResult<Notification>>;
   findAll(clinicId: string, page?: number, limit?: number, filters?: { isRead?: boolean, type?: string, channel?: string }): Promise<PaginatedResult<Notification>>;
-  markAsRead(id: string): Promise<void>;
+  markAsRead(id: string, clinicId?: string): Promise<number>;
   markAllAsRead(clinicId: string, userId?: string): Promise<void>;
-  getUnreadCount(clinicId: string, userId?: string): Promise<number>;
+  getUnreadCount(clinicId: string, userId?: string, channel?: string): Promise<number>;
 }
 
 export class MockNotificationRepository implements INotificationRepository {
@@ -84,12 +84,14 @@ export class MockNotificationRepository implements INotificationRepository {
     };
   }
 
-  async markAsRead(id: string): Promise<void> {
-    const notif = this.notifications.find(n => n.id === id);
+  async markAsRead(id: string, clinicId?: string): Promise<number> {
+    const notif = this.notifications.find(n => n.id === id && (!clinicId || n.clinicId === clinicId));
     if (notif) {
       notif.isRead = true;
       notif.readAt = new Date();
+      return 1;
     }
+    return 0;
   }
 
   async markAllAsRead(clinicId: string, userId?: string): Promise<void> {
@@ -101,11 +103,12 @@ export class MockNotificationRepository implements INotificationRepository {
     });
   }
 
-  async getUnreadCount(clinicId: string, userId?: string): Promise<number> {
+  async getUnreadCount(clinicId: string, userId?: string, channel?: string): Promise<number> {
     return this.notifications.filter(n => 
       n.clinicId === clinicId && 
       !n.isRead && 
-      (!userId || n.userId === userId)
+      (!userId || n.userId === userId) &&
+      (!channel || n.channel === channel)
     ).length;
   }
 }
