@@ -10,8 +10,8 @@ export const clinics = pgTable('clinics', {
   logoUrl: text('logo_url'),
   themeConfig: text('theme_config'), // JSON string for custom colors etc.
   isActive: boolean('is_active').default(true).notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
 export const users = pgTable('users', {
@@ -21,8 +21,8 @@ export const users = pgTable('users', {
   phone: text('phone'),
   passwordHash: text('password_hash').notNull(),
    role: text('role', { enum: ['super_admin', 'clinic_owner', 'clinic_admin', 'clinic_staff', 'user'] }).default('user').notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
 // Junction table for users and clinics (rbac)
@@ -31,8 +31,8 @@ export const clinicUsers = pgTable('clinic_users', {
   clinicId: uuid('clinic_id').references(() => clinics.id).notNull(),
   userId: uuid('user_id').references(() => users.id).notNull(),
   role: text('role', { enum: ['clinic_owner', 'clinic_admin', 'clinic_staff', 'customer'] }).default('customer').notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
 // --- Tenant-specific Tables ---
@@ -45,8 +45,8 @@ export const services = pgTable('services', {
   durationMin: integer('duration_min').notNull(),
   price: decimal('price', { precision: 10, scale: 2 }).notNull(),
   isActive: boolean('is_active').default(true).notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
 export const appointments = pgTable('appointments', {
@@ -54,28 +54,28 @@ export const appointments = pgTable('appointments', {
   clinicId: uuid('clinic_id').references(() => clinics.id).notNull(),
   userId: uuid('user_id').references(() => users.id).notNull(),
   serviceId: uuid('service_id').references(() => services.id).notNull(),
-  appointmentDate: timestamp('appointment_date').notNull(),
+  appointmentDate: timestamp('appointment_date', { withTimezone: true }).notNull(),
   startTime: text('start_time').notNull(), // HH:mm
   endTime: text('end_time').notNull(),   // HH:mm
   status: text('status', { enum: ['pending', 'confirmed', 'cancelled', 'completed'] }).default('pending').notNull(),
   note: text('note'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
 export const notifications = pgTable('notifications', {
   id: uuid('id').defaultRandom().primaryKey(),
   clinicId: uuid('clinic_id').references(() => clinics.id).notNull(),
-  userId: uuid('user_id').references(() => users.id).notNull(),
+  userId: uuid('user_id').references(() => users.id),
   appointmentId: uuid('appointment_id').references(() => appointments.id),
-  channel: text('channel', { enum: ['email', 'line'] }).notNull(),
+  channel: text('channel', { enum: ['email', 'line', 'system'] }).notNull(),
   type: text('type', { enum: ['booking_created', 'booking_confirmed', 'booking_cancelled', 'reminder'] }).notNull(),
   message: text('message').notNull(),
   status: text('status', { enum: ['pending', 'sent', 'failed'] }).default('pending').notNull(),
   isRead: boolean('is_read').default(false).notNull(),
-  readAt: timestamp('read_at'),
-  sentAt: timestamp('sent_at'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
+  readAt: timestamp('read_at', { withTimezone: true }),
+  sentAt: timestamp('sent_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
 export const businessHours = pgTable('business_hours', {
@@ -85,19 +85,19 @@ export const businessHours = pgTable('business_hours', {
   startTime: text('start_time').notNull(), // HH:mm
   endTime: text('end_time').notNull(),   // HH:mm
   isOpen: boolean('is_open').default(true).notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
 export const blockedSlots = pgTable('blocked_slots', {
   id: uuid('id').defaultRandom().primaryKey(),
   clinicId: uuid('clinic_id').references(() => clinics.id).notNull(),
-  blockedDate: timestamp('blocked_date').notNull(),
+  blockedDate: timestamp('blocked_date', { withTimezone: true }).notNull(),
   startTime: text('start_time'), // HH:mm (null if whole day)
   endTime: text('end_time'),     // HH:mm
   reason: text('reason'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
 // --- Relations ---
@@ -157,7 +157,7 @@ export const platformAuditLogs = pgTable('platform_audit_logs', {
   action: text('action').notNull(),
   summary: text('summary').notNull(),
   metadata: text('metadata'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
 export const platformAuditLogsRelations = relations(platformAuditLogs, ({ one }) => ({
