@@ -1,4 +1,6 @@
+@import "https://fonts.googleapis.com/css2?family=Epilogue:ital,wght@0,100..900;1,100..900&display=swap";
 @import "tailwindcss";
+
 
 /* LINE Seed Sans TH - OnlineWebFonts CDN (More reliable than official for some regions) */
 @font-face {
@@ -75,6 +77,7 @@
   --shadow-ios: var(--shadow-soft);
   --font-sans: 'LINESeedSansTH', var(--font-prompt), 'Leelawadee UI', 'Thonburi', 'Inter', system-ui, -apple-system, sans-serif;
   --font-display: 'LINESeedSansTH', var(--font-prompt), 'Leelawadee UI', 'Thonburi', 'Outfit', 'Inter', system-ui, sans-serif;
+  --font-epilogue: 'Epilogue', sans-serif;
 }
 
 body {
